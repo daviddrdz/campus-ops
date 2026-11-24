@@ -2,6 +2,10 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import type { UserRole } from "@/generated/prisma/enums";
 import { auth } from "./auth";
+import { AuthorizationError } from "./guards";
+import { can, type Action } from "./permissions";
+
+export { AuthorizationError };
 
 export type SessionUser = {
   id: string;
@@ -10,13 +14,6 @@ export type SessionUser = {
   role: UserRole;
   isActive: boolean;
 };
-
-export class AuthorizationError extends Error {
-  constructor() {
-    super("No tienes permiso para realizar esta acción.");
-    this.name = "AuthorizationError";
-  }
-}
 
 export async function getSession(): Promise<SessionUser | null> {
   const session = await auth.api.getSession({ headers: await headers() });
@@ -45,6 +42,18 @@ export async function requireRole(...roles: UserRole[]): Promise<SessionUser> {
 
   if (!roles.includes(user.role)) {
     throw new AuthorizationError();
+  }
+
+  return user;
+}
+
+export async function requirePagePermission(
+  action: Action,
+): Promise<SessionUser> {
+  const user = await requireUser();
+
+  if (!can(user, action)) {
+    redirect("/reportes");
   }
 
   return user;

@@ -5,6 +5,7 @@ import { auth } from "@/server/auth/auth";
 import {
   AuthorizationError,
   getSession,
+  requirePagePermission,
   requireRole,
   requireUser,
 } from "@/server/auth/session";
@@ -198,6 +199,35 @@ describe("autenticación", () => {
       await expect(requireRole("ADMIN", "TECHNICIAN")).rejects.toBeInstanceOf(
         AuthorizationError,
       );
+    });
+  });
+
+  describe("requirePagePermission", () => {
+    it("redirige a /login sin sesión", async () => {
+      await expect(requirePagePermission("asset:manage")).rejects.toThrow(
+        "REDIRECT:/login",
+      );
+    });
+
+    it.each<UserRole>(["STAFF", "TECHNICIAN"])(
+      "manda a %s a /reportes si no tiene el permiso",
+      async (role) => {
+        await createUser("usuario@campusops.test", role);
+        await signInAs("usuario@campusops.test");
+
+        await expect(requirePagePermission("asset:manage")).rejects.toThrow(
+          "REDIRECT:/reportes",
+        );
+      },
+    );
+
+    it("devuelve al usuario con el permiso", async () => {
+      await createUser("admin@campusops.test", "ADMIN");
+      await signInAs("admin@campusops.test");
+
+      await expect(
+        requirePagePermission("asset:manage"),
+      ).resolves.toMatchObject({ role: "ADMIN" });
     });
   });
 });
