@@ -3,8 +3,14 @@ import { notFound } from "next/navigation";
 import type { AssetStatus } from "@/generated/prisma/enums";
 import { assetStatusLabels, assetTypeLabels } from "@/lib/labels";
 import { cn } from "@/lib/utils";
-import { getAssetView, type AssetView } from "@/server/assets/view";
+import {
+  getAssetView,
+  isStaffAssetView,
+  type AssetView,
+} from "@/server/assets/view";
+import { canViewAllReports, type Viewer } from "@/server/auth/permissions";
 import { getSession } from "@/server/auth/session";
+import { AssetStaffSections } from "./asset-staff-sections";
 
 const statusBands: Record<
   AssetStatus,
@@ -37,14 +43,51 @@ function SheetRow({ label, value }: { label: string; value: string | null }) {
   );
 }
 
-function PublicAssetSheet({ code, asset }: { code: string; asset: AssetView }) {
+// Enlaces de vuelta al área de staff; null para quien no tiene sesión.
+function staffLinks(viewer: Viewer, inventoryNumber: string) {
+  if (canViewAllReports(viewer)) {
+    const query = new URLSearchParams({ estado: "todos", q: inventoryNumber });
+
+    return {
+      area: { href: "/reportes", label: "Reportes" },
+      inbox: `/reportes?${query}`,
+    };
+  }
+
+  return {
+    area: { href: "/mis-reportes", label: "Mis reportes" },
+    inbox: null,
+  };
+}
+
+function AssetSheetView({
+  code,
+  asset,
+  viewer,
+}: {
+  code: string;
+  asset: AssetView;
+  viewer: Viewer;
+}) {
   const band = statusBands[asset.status];
+  const staff = isStaffAssetView(asset) ? asset.staff : null;
+  const links = staff ? staffLinks(viewer, staff.inventoryNumber) : null;
 
   return (
     <>
       <div className={cn("text-white", band.className)}>
         <div className="mx-auto max-w-xl px-4 pt-4 pb-6">
-          <p className="text-sm font-medium">CampusOps</p>
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-sm font-medium">CampusOps</p>
+            {links ? (
+              <Link
+                href={links.area.href}
+                className="-my-2 inline-flex min-h-11 items-center rounded-lg px-2 text-sm font-medium underline underline-offset-4 outline-none focus-visible:ring-3 focus-visible:ring-white/60"
+              >
+                {links.area.label}
+              </Link>
+            ) : null}
+          </div>
           <p className="mt-8 font-heading text-5xl leading-none font-semibold">
             {assetStatusLabels[asset.status]}
           </p>
@@ -57,13 +100,25 @@ function PublicAssetSheet({ code, asset }: { code: string; asset: AssetView }) {
         <p className="mt-1 wrap-anywhere text-muted-foreground">
           {asset.location.building}, {asset.location.room}
         </p>
+        {staff ? (
+          <p className="mt-3">
+            <span className="asset-plate">{staff.inventoryNumber}</span>
+          </p>
+        ) : null}
 
         <dl className="mt-5 divide-y border-y">
           <SheetRow label="Tipo" value={assetTypeLabels[asset.type]} />
           <SheetRow label="Marca" value={asset.brand} />
           <SheetRow label="Modelo" value={asset.model} />
+          {staff ? (
+            <SheetRow label="Número de serie" value={staff.serialNumber} />
+          ) : null}
           <SheetRow label="Especificaciones" value={asset.specifications} />
         </dl>
+
+        {staff ? (
+          <AssetStaffSections staff={staff} inboxHref={links?.inbox ?? null} />
+        ) : null}
       </div>
 
       <div className="fixed inset-x-0 bottom-0 border-t bg-card p-3">
@@ -93,5 +148,5 @@ export async function AssetSheet({
     notFound();
   }
 
-  return <PublicAssetSheet code={code} asset={asset} />;
+  return <AssetSheetView code={code} asset={asset} viewer={viewer} />;
 }

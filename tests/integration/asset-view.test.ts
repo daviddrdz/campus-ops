@@ -3,7 +3,12 @@ import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
 import type { UserRole } from "@/generated/prisma/enums";
 import { AssetSheet } from "@/components/assets/asset-sheet";
 import { getAssetLabel } from "@/server/assets/service";
-import { getAssetView } from "@/server/assets/view";
+import {
+  ASSET_HISTORY_LIMIT,
+  getAssetView,
+  isStaffAssetView,
+  type StaffAssetView,
+} from "@/server/assets/view";
 import { AuthorizationError } from "@/server/auth/guards";
 import type { Viewer } from "@/server/auth/permissions";
 import { db } from "@/server/db";
@@ -222,6 +227,168 @@ describe("ficha pública del activo", () => {
       await expect(
         getAssetLabel(viewerWith("ADMIN"), "no-existe"),
       ).resolves.toBeNull();
+    });
+  });
+
+  describe("ficha para staff", () => {
+    const SUMMARY_FIELDS = [
+      "createdAt",
+      "description",
+      "detailId",
+      "folio",
+      "priority",
+      "resolutionNote",
+      "resolvedAt",
+      "status",
+      "technician",
+    ];
+    const NEVER_IN_STAFF_SHEET = [
+      privateValues.reporterName,
+      privateValues.reporterEmail,
+      privateValues.reporterIpHash,
+      privateValues.technicianEmail,
+      privateValues.eventMessage,
+    ];
+
+    async function staffView(viewer: Viewer) {
+      const view = await getAssetView(PUBLIC_CODE, viewer);
+
+      if (!view || !isStaffAssetView(view)) {
+        throw new Error("Se esperaba la vista de staff.");
+      }
+
+      return view;
+    }
+
+    it.each(["STAFF", "TECHNICIAN", "ADMIN"] as const)(
+      "%s recibe serie, inventario, etapa, técnico e historial",
+      async (role) => {
+        const { report } = await seedAssetWithHistory();
+
+        const view = await staffView(viewerWith(role));
+
+        expect(Object.keys(view).sort()).toEqual(
+          [...PUBLIC_FIELDS, "staff"].sort(),
+        );
+        expect(view.staff).toMatchObject({
+          inventoryNumber: privateValues.inventoryNumber,
+          serialNumber: privateValues.serialNumber,
+          reportCount: 1,
+        });
+        expect(view.staff.openReports).toEqual(view.staff.history);
+        expect(view.staff.openReports[0]).toMatchObject({
+          folio: report.folio,
+          status: "IN_PROGRESS",
+          technician: privateValues.technicianName,
+          description: privateValues.description,
+          resolutionNote: privateValues.resolutionNote,
+        });
+        expect(Object.keys(view.staff.openReports[0]).sort()).toEqual(
+          SUMMARY_FIELDS,
+        );
+      },
+    );
+
+    it("nunca trae el contacto ni el hash de IP de quien reportó", async () => {
+      const { asset, location } = await seedAssetWithHistory();
+
+      const content = JSON.stringify(await staffView(viewerWith("STAFF")));
+
+      for (const value of [...NEVER_IN_STAFF_SHEET, asset.id, location.id]) {
+        expect(content).not.toContain(value);
+      }
+    });
+
+    it("el técnico ve todo el historial, pero solo abre sus reportes", async () => {
+      const { report, technician } = await seedAssetWithHistory();
+      const other = await db.report.create({
+        data: { assetId: report.assetId, description: "Otra falla" },
+      });
+
+      const asTech = await staffView({
+        id: technician.id,
+        role: "TECHNICIAN",
+        isActive: true,
+      });
+      const asOtherTech = await staffView(viewerWith("TECHNICIAN"));
+      const asStaff = await staffView(viewerWith("STAFF"));
+
+      const detailIds = (view: StaffAssetView) =>
+        view.staff.history.map((r) => [r.folio, r.detailId]);
+
+      expect(detailIds(asTech)).toEqual([
+        [other.folio, null],
+        [report.folio, report.id],
+      ]);
+      expect(detailIds(asOtherTech)).toEqual([
+        [other.folio, null],
+        [report.folio, null],
+      ]);
+      expect(detailIds(asStaff)).toEqual([
+        [other.folio, other.id],
+        [report.folio, report.id],
+      ]);
+    });
+
+    it(`separa los abiertos e incluye solo los ${ASSET_HISTORY_LIMIT} reportes más recientes`, async () => {
+      const { report } = await seedAssetWithHistory();
+      const closed = [];
+      for (let i = 0; i < ASSET_HISTORY_LIMIT; i++) {
+        closed.push(
+          await db.report.create({
+            data: {
+              assetId: report.assetId,
+              description: `Falla ${i}`,
+              status: i % 2 ? "RESOLVED" : "REJECTED",
+            },
+          }),
+        );
+      }
+
+      const { staff } = await staffView(viewerWith("ADMIN"));
+
+      expect(staff.reportCount).toBe(ASSET_HISTORY_LIMIT + 1);
+      expect(staff.openReports.map((r) => r.folio)).toEqual([report.folio]);
+      expect(staff.history.map((r) => r.folio)).toEqual(
+        closed.map((r) => r.folio).reverse(),
+      );
+    });
+
+    it("la página para STAFF muestra los datos de staff y no el contacto", async () => {
+      const { report } = await seedAssetWithHistory();
+      session.user = viewerWith("STAFF");
+
+      const html = renderToStaticMarkup(
+        await AssetSheet({ params: Promise.resolve({ code: PUBLIC_CODE }) }),
+      );
+
+      for (const value of [
+        privateValues.inventoryNumber,
+        privateValues.serialNumber,
+        privateValues.technicianName,
+        privateValues.description,
+        "En atención",
+        "Historial de reportes",
+        `/reportes/${report.id}`,
+        `/a/${PUBLIC_CODE}/reportar`,
+      ]) {
+        expect(html).toContain(value);
+      }
+      for (const value of NEVER_IN_STAFF_SHEET) {
+        expect(html).not.toContain(value);
+      }
+    });
+
+    it("una cuenta inactiva recibe la ficha pública", async () => {
+      await seedAssetWithHistory();
+
+      const view = await getAssetView(PUBLIC_CODE, {
+        id: "x",
+        role: "STAFF",
+        isActive: false,
+      });
+
+      expect(view && isStaffAssetView(view)).toBe(false);
     });
   });
 });
