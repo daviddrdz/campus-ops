@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { ReportForm } from "@/components/reports/report-form";
 import type { SubmitReportState } from "@/server/reports/actions";
@@ -54,7 +54,8 @@ describe("ReportForm", () => {
     const heading = await screen.findByRole("heading", {
       name: "Reporte enviado",
     });
-    expect(heading).toHaveFocus();
+    // El foco llega en un efecto, después de pintar el encabezado.
+    await waitFor(() => expect(heading).toHaveFocus());
     expect(screen.getByText("42")).toBeInTheDocument();
     expect(
       screen.getByRole("link", { name: "Ver la ficha del equipo" }),
