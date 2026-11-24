@@ -65,7 +65,7 @@ Si vas justo de tiempo: fusiona Fase 0 + 1 y Fase 9 + 10, y aplica el recorte de
 
 ### Estado de las fases
 
-- [x] Fase 0  - [x] Fase 1  - [x] Fase 2  - [x] Fase 3  - [ ] Fase 4  - [ ] Fase 5  - [ ] Fase 6
+- [x] Fase 0  - [x] Fase 1  - [x] Fase 2  - [x] Fase 3  - [x] Fase 4  - [ ] Fase 5  - [ ] Fase 6
 - [ ] Fase 7  - [ ] Fase 8  - [ ] Fase 9  - [ ] Fase 10  - [ ] Fase 11  - [ ] Fase 12
 
 ## 4. Estrategia de pruebas
@@ -177,11 +177,11 @@ Reglas:
 **Depende de:** Fase 3.
 
 **Tareas**
-- [ ] `lib/qr.ts`: `buildAssetUrl(code)` con `APP_URL` y generación del QR (SVG o PNG) con la librería `qrcode`.
-- [ ] `/activos/[id]/qr`: QR + etiqueta imprimible (nombre, ubicación, código) con estilos de impresión.
-- [ ] `/a/[code]`: ficha del activo. `getAssetView(code, viewer)` devuelve un DTO **con lista explícita de campos**: el DTO público trae tipo, marca, modelo, ubicación, especificaciones y estado; el DTO de staff queda como punto de extensión para la Fase 8.
-- [ ] Código desconocido → 404; etiqueta de estado con color y texto; botón "Reportar falla" (enlace a la Fase 6).
-- [ ] Diseño mobile-first.
+- [x] `lib/qr.ts`: `buildAssetUrl(code)` con `APP_URL` y generación del QR (SVG o PNG) con la librería `qrcode`.
+- [x] `/activos/[id]/qr`: QR + etiqueta imprimible (nombre, ubicación, código) con estilos de impresión.
+- [x] `/a/[code]`: ficha del activo. `getAssetView(code, viewer)` devuelve un DTO **con lista explícita de campos**: el DTO público trae nombre, tipo, marca, modelo, ubicación, especificaciones y estado; el DTO de staff queda como punto de extensión para la Fase 8.
+- [x] Código desconocido → pantalla 404 con `noindex` (HTTP 200 por Cache Components; ver `CLAUDE.md`); etiqueta de estado con color y texto; botón "Reportar falla" (enlace a la Fase 6).
+- [x] Diseño mobile-first.
 
 **Pruebas**
 - Unitarias: `buildAssetUrl` con y sin barra final en `APP_URL`; el QR generado codifica exactamente esa URL.
@@ -391,9 +391,8 @@ Sacrifica en este orden, de lo primero a lo último:
 Confirmar con el usuario (ver también "Decisiones abiertas" en `CLAUDE.md`):
 
 1. ¿Horas reales disponibles por día y fecha exacta de entrega?
-2. ¿Qué datos del equipo debe ver el público? ¿Serie e inventario sí o no? (Afecta Fase 4.)
-3. ¿Quien reporta recibe seguimiento por correo? (Fases 6 y 10.)
-4. ¿Dónde se desplegará la demo y con qué dominio? (Fase 12.)
+2. ¿Quien reporta recibe seguimiento por correo? (Fases 6 y 10.)
+3. ¿Dónde se desplegará la demo y con qué dominio? (Fase 12.)
 
 ## 10. Backlog posterior al MVP
 
