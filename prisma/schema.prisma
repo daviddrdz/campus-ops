@@ -1,0 +1,175 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum UserRole {
+  ADMIN
+  TECHNICIAN
+  STAFF
+}
+
+enum AssetType {
+  COMPUTER
+  DISPLAY
+  PROJECTOR
+  LAB_EQUIPMENT
+  OTHER
+}
+
+enum AssetStatus {
+  OPERATIONAL
+  FAULT_REPORTED
+  IN_MAINTENANCE
+}
+
+enum ReportStatus {
+  REPORTED
+  ASSIGNED
+  IN_PROGRESS
+  RESOLVED
+  REJECTED
+}
+
+enum ReportPriority {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum FaultType {
+  HARDWARE
+  SOFTWARE
+  CONNECTIVITY
+  POWER
+  OTHER
+}
+
+enum ReportEventType {
+  CREATED
+  ASSIGNED
+  STATUS_CHANGED
+  COMMENT
+}
+
+enum NotificationType {
+  REPORT_CREATED
+  REPORT_ASSIGNED
+  REPORT_RESOLVED
+}
+
+model User {
+  id            String   @id @default(cuid())
+  name          String
+  email         String   @unique
+  emailVerified Boolean  @default(false)
+  image         String?
+  role          UserRole @default(STAFF)
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  assignedReports Report[]
+  reportEvents    ReportEvent[]
+  notifications   Notification[]
+}
+
+model Location {
+  id        String   @id @default(cuid())
+  building  String
+  room      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  assets Asset[]
+
+  @@unique([building, room])
+}
+
+model Asset {
+  id              String      @id @default(cuid())
+  publicCode      String      @unique
+  inventoryNumber String      @unique
+  name            String
+  type            AssetType
+  brand           String?
+  model           String?
+  serialNumber    String?     @unique
+  specifications  String?
+  status          AssetStatus @default(OPERATIONAL)
+  locationId      String
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  location Location @relation(fields: [locationId], references: [id], onDelete: Restrict)
+  reports  Report[]
+
+  @@index([locationId])
+  @@index([status])
+}
+
+model Report {
+  id             String         @id @default(cuid())
+  folio          Int            @unique @default(autoincrement())
+  assetId        String
+  description    String
+  faultType      FaultType?
+  priority       ReportPriority @default(MEDIUM)
+  status         ReportStatus   @default(REPORTED)
+  reporterName   String?
+  reporterEmail  String?
+  reporterIpHash String?
+  assignedToId   String?
+  resolutionNote String?
+  assignedAt     DateTime?
+  resolvedAt     DateTime?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  asset         Asset          @relation(fields: [assetId], references: [id], onDelete: Restrict)
+  assignedTo    User?          @relation(fields: [assignedToId], references: [id], onDelete: Restrict)
+  events        ReportEvent[]
+  notifications Notification[]
+
+  @@index([assetId, status])
+  @@index([assignedToId, status])
+  @@index([status, createdAt])
+  @@index([reporterIpHash, createdAt])
+}
+
+model ReportEvent {
+  id         String          @id @default(cuid())
+  reportId   String
+  type       ReportEventType
+  actorId    String?
+  fromStatus ReportStatus?
+  toStatus   ReportStatus?
+  message    String?
+  createdAt  DateTime        @default(now())
+
+  report Report @relation(fields: [reportId], references: [id], onDelete: Restrict)
+  actor  User?  @relation(fields: [actorId], references: [id], onDelete: Restrict)
+
+  @@index([reportId, createdAt])
+  @@index([actorId])
+}
+
+model Notification {
+  id          String           @id @default(cuid())
+  recipientId String
+  reportId    String
+  type        NotificationType
+  message     String
+  readAt      DateTime?
+  createdAt   DateTime         @default(now())
+
+  recipient User   @relation(fields: [recipientId], references: [id], onDelete: Restrict)
+  report    Report @relation(fields: [reportId], references: [id], onDelete: Restrict)
+
+  @@index([recipientId, readAt, createdAt])
+  @@index([reportId])
+}

@@ -1,6 +1,9 @@
 # Política de seguridad de dependencias. Ver "Entorno seguro con pnpm" en CLAUDE.md.
 # Los build scripts quedan bloqueados salvo aprobación explícita, paquete por paquete.
 allowBuilds:
+  '@prisma/engines': true
+  esbuild: false
+  prisma: false
   sharp: false
   unrs-resolver: false
 strictDepBuilds: true
