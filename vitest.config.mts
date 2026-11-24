@@ -39,6 +39,7 @@ export default defineConfig({
             DATABASE_URL: testDatabaseUrl,
             APP_URL: "http://localhost:3000",
             BETTER_AUTH_SECRET: "secreto-solo-para-pruebas-de-integracion",
+            IP_HASH_SECRET: "secreto-de-ip-solo-para-pruebas",
           },
         },
       },
