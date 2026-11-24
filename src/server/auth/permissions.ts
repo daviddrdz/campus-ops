@@ -11,6 +11,7 @@ export const ACTIONS = [
   "report:setPriority",
   "report:changeStatus",
   "report:comment",
+  "notification:receive",
   "asset:manage",
   "user:manage",
 ] as const;
@@ -86,6 +87,13 @@ const permissions: Record<
     anonymous: false,
     STAFF: false,
     TECHNICIAN: "assigned",
+    ADMIN: true,
+  },
+  // Campana de avisos: solo los roles a los que les llegan (Fase 9).
+  "notification:receive": {
+    anonymous: false,
+    STAFF: false,
+    TECHNICIAN: true,
     ADMIN: true,
   },
   "asset:manage": {
