@@ -22,8 +22,16 @@ describe("navegación del área staff", () => {
     ]);
   });
 
-  it.each(["STAFF", "TECHNICIAN"] as const)("%s solo ve reportes", (role) => {
-    expect(labels(viewer(role))).toEqual(["Reportes"]);
+  it("el administrativo solo ve la bandeja de reportes", () => {
+    expect(staffNavItems(viewer("STAFF"))).toEqual([
+      { href: "/reportes", label: "Reportes" },
+    ]);
+  });
+
+  it("el técnico solo ve sus reportes", () => {
+    expect(staffNavItems(viewer("TECHNICIAN"))).toEqual([
+      { href: "/mis-reportes", label: "Mis reportes" },
+    ]);
   });
 
   it("sin sesión o inactivo no hay secciones", () => {

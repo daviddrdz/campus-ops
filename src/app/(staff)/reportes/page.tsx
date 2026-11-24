@@ -1,30 +1,23 @@
 import type { Metadata } from "next";
 import Form from "next/form";
 import Link from "next/link";
-import {
-  ReportPriorityBadge,
-  ReportStatusBadge,
-} from "@/components/reports/report-badges";
+import { redirect } from "next/navigation";
+import { ReportListItem } from "@/components/reports/report-list-item";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { NativeSelect } from "@/components/ui/native-select";
 import { ReportStatus } from "@/generated/prisma/enums";
-import { formatDateTime } from "@/lib/dates";
 import { reportStatusLabels } from "@/lib/labels";
-import { cn } from "@/lib/utils";
 import { ASSET_LIMITS } from "@/lib/validators/assets";
 import {
   STATUS_FILTER_ALL,
   TECHNICIAN_FILTER_NONE,
   type ReportFilters,
 } from "@/lib/validators/reports";
+import { canViewAllReports } from "@/server/auth/permissions";
 import { requirePagePermission } from "@/server/auth/session";
-import {
-  listReports,
-  listTechnicians,
-  type ReportInbox,
-} from "@/server/reports/queries";
+import { listReports, listTechnicians } from "@/server/reports/queries";
 
 export const metadata: Metadata = {
   title: "Reportes · CampusOps",
@@ -73,60 +66,26 @@ function isFiltered(filters: ReportFilters) {
   );
 }
 
-function ReportRow({ report }: { report: ReportInbox["reports"][number] }) {
-  return (
-    <li>
-      <Link
-        href={`/reportes/${report.id}`}
-        aria-label={`Folio ${report.folio}, ${report.asset.name}, ${reportStatusLabels[report.status]}`}
-        className={cn(
-          "block space-y-1.5 border-l-4 px-4 py-3 outline-none hover:bg-muted/50 focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:ring-inset",
-          report.priority === "HIGH" ? "border-signal" : "border-transparent",
-        )}
-      >
-        <span className="flex items-baseline justify-between gap-3">
-          <span className="font-heading text-xl font-semibold tabular-nums">
-            Folio {report.folio}
-          </span>
-          <ReportStatusBadge status={report.status} />
-        </span>
-        <span className="block font-medium wrap-anywhere">
-          {report.asset.name}
-        </span>
-        <span className="block text-sm wrap-anywhere text-muted-foreground">
-          {report.asset.location.building}, {report.asset.location.room}
-        </span>
-        <span className="line-clamp-2 block text-sm wrap-anywhere">
-          {report.description}
-        </span>
-        <span className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 pt-0.5">
-          <span className="text-sm text-muted-foreground">
-            {report.assignedTo ? report.assignedTo.name : "Sin asignar"}
-          </span>
-          <ReportPriorityBadge priority={report.priority} />
-        </span>
-        <span className="block text-xs text-muted-foreground">
-          <time dateTime={report.createdAt.toISOString()}>
-            {formatDateTime(report.createdAt)}
-          </time>
-        </span>
-      </Link>
-    </li>
-  );
-}
-
 export default async function ReportsPage({
   searchParams,
 }: PageProps<"/reportes">) {
   const viewer = await requirePagePermission("report:listInbox");
-  const inbox = await listReports(viewer, await searchParams);
-  const { filters, page, pageCount, total, reports, scope } = inbox;
-  const technicians = scope === "all" ? await listTechnicians(viewer) : [];
+
+  // El técnico trabaja desde su propia pantalla.
+  if (!canViewAllReports(viewer)) {
+    redirect("/mis-reportes");
+  }
+
+  const [inbox, technicians] = await Promise.all([
+    listReports(viewer, await searchParams),
+    listTechnicians(viewer),
+  ]);
+  const { filters, page, pageCount, total, reports } = inbox;
 
   return (
     <section className="mx-auto max-w-3xl space-y-5">
       <div className="space-y-1">
-        <h1>{scope === "all" ? "Reportes" : "Reportes asignados a ti"}</h1>
+        <h1>Reportes</h1>
         {viewer.role === "STAFF" ? (
           <p className="text-sm text-muted-foreground">
             Puedes consultar todos los reportes; la asignación la hace el
@@ -159,27 +118,25 @@ export default async function ReportsPage({
           </NativeSelect>
         </div>
 
-        {scope === "all" ? (
-          <div className="space-y-1.5">
-            <Label htmlFor="filter-technician">Técnico</Label>
-            <NativeSelect
-              key={filters.technician ?? ""}
-              id="filter-technician"
-              name="tecnico"
-              defaultValue={technicianParam(filters.technician)}
-            >
-              <option value="">Cualquiera</option>
-              <option value={TECHNICIAN_FILTER_NONE}>Sin asignar</option>
-              {technicians.map((technician) => (
-                <option key={technician.id} value={technician.id}>
-                  {technician.isActive
-                    ? technician.name
-                    : `${technician.name} (inactivo)`}
-                </option>
-              ))}
-            </NativeSelect>
-          </div>
-        ) : null}
+        <div className="space-y-1.5">
+          <Label htmlFor="filter-technician">Técnico</Label>
+          <NativeSelect
+            key={filters.technician ?? ""}
+            id="filter-technician"
+            name="tecnico"
+            defaultValue={technicianParam(filters.technician)}
+          >
+            <option value="">Cualquiera</option>
+            <option value={TECHNICIAN_FILTER_NONE}>Sin asignar</option>
+            {technicians.map((technician) => (
+              <option key={technician.id} value={technician.id}>
+                {technician.isActive
+                  ? technician.name
+                  : `${technician.name} (inactivo)`}
+              </option>
+            ))}
+          </NativeSelect>
+        </div>
 
         <div className="space-y-1.5 sm:col-span-2">
           <Label htmlFor="filter-asset">Equipo</Label>
@@ -218,16 +175,19 @@ export default async function ReportsPage({
                 Ver los reportes abiertos
               </Link>
             </>
-          ) : scope === "all" ? (
-            <p>No hay reportes abiertos. Los nuevos aparecerán aquí.</p>
           ) : (
-            <p>No tienes reportes abiertos asignados.</p>
+            <p>No hay reportes abiertos. Los nuevos aparecerán aquí.</p>
           )}
         </div>
       ) : (
         <ul className="divide-y overflow-hidden rounded-lg border bg-card">
           {reports.map((report) => (
-            <ReportRow key={report.id} report={report} />
+            <ReportListItem
+              key={report.id}
+              report={report}
+              detail={report.assignedTo?.name ?? "Sin asignar"}
+              date={{ label: "Reportado el", value: report.createdAt }}
+            />
           ))}
         </ul>
       )}

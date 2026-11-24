@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Field } from "@/components/forms/field";
+import { FormMessage } from "@/components/forms/form-message";
 import {
   useServerForm,
   type FormAction,
@@ -17,14 +18,6 @@ import {
   type RejectReportField,
   type ReportPriorityField,
 } from "@/lib/validators/reports";
-
-function FormMessage({ message }: { message?: string }) {
-  return message ? (
-    <p role="alert" className="text-sm text-destructive">
-      {message}
-    </p>
-  ) : null;
-}
 
 type Technician = { id: string; name: string };
 

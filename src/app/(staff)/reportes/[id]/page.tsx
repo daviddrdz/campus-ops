@@ -13,20 +13,29 @@ import {
   ReportStatusBadge,
 } from "@/components/reports/report-badges";
 import { ReportTimeline } from "@/components/reports/report-timeline";
+import {
+  CommentForm,
+  ResolveForm,
+  StartForm,
+} from "@/components/reports/report-work-actions";
 import { formatDateTime } from "@/lib/dates";
 import { faultTypeLabels } from "@/lib/labels";
-import { can } from "@/server/auth/permissions";
+import { can, canViewAllReports } from "@/server/auth/permissions";
 import { requirePagePermission } from "@/server/auth/session";
 import {
   assignReportAction,
+  commentReportAction,
   rejectReportAction,
+  resolveReportAction,
   setReportPriorityAction,
+  startReportAction,
 } from "@/server/reports/actions";
 import {
   getReportDetail,
   listTechnicians,
   type ReportDetail,
 } from "@/server/reports/queries";
+import type { ReportOperation } from "@/server/reports/transitions";
 
 export const metadata: Metadata = {
   title: "Reporte · CampusOps",
@@ -36,7 +45,13 @@ const notices: Record<string, string> = {
   asignado: "Técnico asignado.",
   prioridad: "Prioridad actualizada.",
   rechazado: "Reporte rechazado.",
+  "en-proceso": "Reporte en proceso.",
+  resuelto: "Reporte resuelto.",
+  nota: "Nota guardada.",
 };
+
+const WORK_OPERATIONS: ReportOperation[] = ["start", "resolve", "comment"];
+const ADMIN_OPERATIONS: ReportOperation[] = ["assign", "prioritize", "reject"];
 
 const linkClass =
   "inline-block py-2 text-sm font-medium text-primary underline underline-offset-4";
@@ -78,6 +93,39 @@ function Reporter({ report }: { report: ReportDetail }) {
   );
 }
 
+// Avance del trabajo: lo hace el técnico asignado (o el ADMIN).
+function WorkActions({ report }: { report: ReportDetail }) {
+  const { operations } = report;
+
+  return (
+    <section
+      aria-labelledby="work-heading"
+      className="space-y-5 rounded-lg border bg-card p-4"
+    >
+      <h2 id="work-heading" className="font-heading text-xl font-semibold">
+        Avance del trabajo
+      </h2>
+      {operations.includes("start") ? (
+        <StartForm action={startReportAction.bind(null, report.id)} />
+      ) : null}
+      {operations.includes("resolve") ? (
+        <ResolveForm action={resolveReportAction.bind(null, report.id)} />
+      ) : null}
+      {operations.includes("comment") ? (
+        <div
+          className={
+            operations.includes("start") || operations.includes("resolve")
+              ? "border-t pt-5"
+              : undefined
+          }
+        >
+          <CommentForm action={commentReportAction.bind(null, report.id)} />
+        </div>
+      ) : null}
+    </section>
+  );
+}
+
 async function AdminActions({
   viewer,
   report,
@@ -97,7 +145,7 @@ async function AdminActions({
       className="space-y-5 rounded-lg border bg-card p-4"
     >
       <h2 id="actions-heading" className="font-heading text-xl font-semibold">
-        Atender el reporte
+        Asignación
       </h2>
       {canAssign ? (
         <AssignForm
@@ -136,17 +184,23 @@ export default async function ReportPage({
   }
 
   const notice = typeof aviso === "string" ? notices[aviso] : undefined;
-  const adminOperations = report.operations.filter((op) =>
-    ["assign", "prioritize", "reject"].includes(op),
+  const hasWorkOperations = report.operations.some((op) =>
+    WORK_OPERATIONS.includes(op),
   );
+  const hasAdminOperations = report.operations.some((op) =>
+    ADMIN_OPERATIONS.includes(op),
+  );
+  const backHref = canViewAllReports(viewer) ? "/reportes" : "/mis-reportes";
   const closingLabel =
     report.status === "REJECTED" ? "Motivo del rechazo" : "Nota de resolución";
 
   return (
     <article className="mx-auto max-w-2xl space-y-6">
       <div className="space-y-2">
-        <Link href="/reportes" className={linkClass}>
-          Volver a reportes
+        <Link href={backHref} className={linkClass}>
+          {backHref === "/reportes"
+            ? "Volver a reportes"
+            : "Volver a mis reportes"}
         </Link>
         <h1 className="tabular-nums">Folio {report.folio}</h1>
         <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
@@ -220,7 +274,9 @@ export default async function ReportPage({
         ) : null}
       </dl>
 
-      {adminOperations.length > 0 ? (
+      {hasWorkOperations ? <WorkActions report={report} /> : null}
+
+      {hasAdminOperations ? (
         <AdminActions viewer={viewer} report={report} />
       ) : null}
 
