@@ -9,6 +9,9 @@ export const REPORT_LIMITS = {
   note: 1000,
 } as const;
 
+// Campo trampa del formulario público: oculto para las personas, solo un bot lo llena.
+export const HONEYPOT_FIELD = "website";
+
 const emptyToNull = (value: unknown) => (value === "" ? null : value);
 
 export const reportInputSchema = z.object({

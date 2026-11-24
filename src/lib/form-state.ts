@@ -2,10 +2,11 @@ import type { z } from "zod";
 
 export type FieldErrors<Field extends string> = Partial<Record<Field, string>>;
 
-export type FormState<Field extends string> = {
+export type FormState<Field extends string, Data = undefined> = {
   ok: boolean;
   message?: string;
   fieldErrors?: FieldErrors<Field>;
+  data?: Data;
 };
 
 export type ServiceResult<Data, Field extends string> =

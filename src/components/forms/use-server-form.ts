@@ -9,18 +9,18 @@ import {
 } from "react";
 import type { FormState } from "@/lib/form-state";
 
-export type FormAction<Field extends string> = (
-  previous: FormState<Field>,
+export type FormAction<Field extends string, Data = undefined> = (
+  previous: FormState<Field, Data>,
   formData: FormData,
-) => Promise<FormState<Field>>;
+) => Promise<FormState<Field, Data>>;
 
-export function useServerForm<Field extends string>(
-  action: FormAction<Field>,
+export function useServerForm<Field extends string, Data = undefined>(
+  action: FormAction<Field, Data>,
   onSaved?: () => void,
 ) {
   const formRef = useRef<HTMLFormElement>(null);
   const [state, formAction, isPending] = useActionState<
-    FormState<Field>,
+    FormState<Field, Data>,
     FormData
   >(
     async (previous, formData) => {
