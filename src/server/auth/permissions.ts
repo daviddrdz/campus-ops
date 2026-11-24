@@ -7,6 +7,7 @@ export const ACTIONS = [
   "report:listInbox",
   "report:view",
   "report:assign",
+  "report:reject",
   "report:changeStatus",
   "asset:manage",
   "user:manage",
@@ -55,6 +56,12 @@ const permissions: Record<
     ADMIN: true,
   },
   "report:assign": {
+    anonymous: false,
+    STAFF: false,
+    TECHNICIAN: false,
+    ADMIN: true,
+  },
+  "report:reject": {
     anonymous: false,
     STAFF: false,
     TECHNICIAN: false,
