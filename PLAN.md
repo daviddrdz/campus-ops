@@ -65,7 +65,7 @@ Si vas justo de tiempo: fusiona Fase 0 + 1 y Fase 9 + 10, y aplica el recorte de
 
 ### Estado de las fases
 
-- [x] Fase 0  - [x] Fase 1  - [ ] Fase 2  - [ ] Fase 3  - [ ] Fase 4  - [ ] Fase 5  - [ ] Fase 6
+- [x] Fase 0  - [x] Fase 1  - [x] Fase 2  - [ ] Fase 3  - [ ] Fase 4  - [ ] Fase 5  - [ ] Fase 6
 - [ ] Fase 7  - [ ] Fase 8  - [ ] Fase 9  - [ ] Fase 10  - [ ] Fase 11  - [ ] Fase 12
 
 ## 4. Estrategia de pruebas
@@ -136,20 +136,20 @@ Reglas:
 **Depende de:** Fase 1.
 
 **Tareas**
-- [ ] Better Auth con correo/contraseña y adaptador de Prisma; verificar la documentación vigente antes de implementar. Agregar al esquema las tablas que pida (sesión, cuenta, verificación).
-- [ ] Campo `role` en el usuario. **Registro abierto deshabilitado.**
-- [ ] El seed crea las credenciales de los 4 usuarios de desarrollo (contraseñas solo para desarrollo, documentadas en el README).
-- [ ] `server/auth/permissions.ts`: `can(user, action, resource?)` como función pura con la matriz de `CLAUDE.md`.
-- [ ] Helpers `getSession()` y `requireRole()` para páginas y acciones del servidor.
-- [ ] `/login`, cierre de sesión y layout del área `(staff)` con nombre y rol; redirige si no hay sesión.
-- [ ] Si la autenticación consume más de ~2 h, simplificar: sin recuperación de contraseña ni OAuth.
+- [x] Better Auth con correo/contraseña y adaptador de Prisma; verificar la documentación vigente antes de implementar. Agregar al esquema las tablas que pida (sesión, cuenta, verificación, límite de intentos).
+- [x] Campo `role` en el usuario. **Registro abierto deshabilitado.**
+- [x] El seed crea las credenciales de los 4 usuarios de desarrollo (contraseñas solo para desarrollo, documentadas en el README).
+- [x] `server/auth/permissions.ts`: `can(user, action, resource?)` como función pura con la matriz de `CLAUDE.md`.
+- [x] Helpers `getSession()` y `requireRole()` para páginas y acciones del servidor.
+- [x] `/login`, cierre de sesión y layout del área `(staff)` con nombre y rol; redirige si no hay sesión.
+- [x] Si la autenticación consume más de ~2 h, simplificar: sin recuperación de contraseña ni OAuth.
 
 **Pruebas**
 - Unitarias: matriz completa de `can()` en una tabla (cada rol × cada acción, incluido anónimo).
 - Integración: login correcto e incorrecto; el endpoint de registro rechaza solicitudes; `requireRole` lanza error con un rol no permitido; un usuario inactivo no puede iniciar sesión.
 - Manual: entrar con cada uno de los 4 usuarios y ver su rol; entrar a `(staff)` sin sesión redirige a `/login`.
 
-**Listo cuando:** los 4 roles inician sesión, la ruta protegida redirige a anónimos y la matriz de permisos tiene pruebas para todas las combinaciones.
+**Listo cuando:** los 4 usuarios (3 roles) inician sesión, la ruta protegida redirige a anónimos y la matriz de permisos tiene pruebas para todas las combinaciones.
 
 ---
 

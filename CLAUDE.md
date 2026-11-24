@@ -25,14 +25,16 @@ Los borradores originales (`CampusOps_Idea_Breve.pdf`, `CampusOps_Propuesta_Empr
 
 ## Estado actual
 
-- Fase actual: **Fase 1 terminada. Siguiente: Fase 2 (Autenticación y permisos).**
-- Última fase completada: Fase 1 (Base de datos y seed).
-- Verificado en la Fase 1: `pnpm check` con pruebas de integración contra `campusops_test`, `pnpm build`, `pnpm db:reset` desde cero, seed repetible e instalación limpia con `--frozen-lockfile`.
-- Para correr `pnpm check` hacen falta PostgreSQL arriba y un `.env` copiado de `.env.example`.
+- Fase actual: **Fase 2 terminada. Siguiente: Fase 3 (Activos y ubicaciones).**
+- Última fase completada: Fase 2 (Autenticación y permisos).
+- Verificado en la Fase 2: `pnpm check`, `pnpm build`, matriz de permisos completa y, sobre el build de producción en navegador con tamaño de celular, login y cierre de sesión de los 4 usuarios, redirección sin sesión y límite de intentos. Falta probarlo en un celular físico.
+- Para correr `pnpm check` y `pnpm build` hacen falta PostgreSQL arriba y un `.env` copiado de `.env.example` con `BETTER_AUTH_SECRET`.
 - Plan: `PLAN.md` — 13 fases (0–12), cada una pensada para **una sesión de Claude Code**, con pruebas propias y un criterio "Listo cuando".
 - Actualiza esta sección al cerrar cada fase.
 
-## Roles y permisos (propuesta, por confirmar)
+## Roles y permisos
+
+Matriz confirmada e implementada en `src/server/auth/permissions.ts`.
 
 | Acción | Público (sin cuenta) | ADMINISTRATIVO | TECNICO | ADMIN |
 |---|:-:|:-:|:-:|:-:|
@@ -193,6 +195,11 @@ Mantenimiento preventivo programado, costos de reparación, dashboard/analítica
 - **STAFF (Administrativo) es un rol propio** de solo lectura. El seed crea 1 ADMIN, 2 técnicos y 1 STAFF.
 - **Varios reportes abiertos por activo:** se permiten. En la Fase 6 se avisa a quien reporta que ya hay uno abierto, sin bloquearlo.
 - **Tipo de falla:** opcional, con las cinco opciones de `FaultType`.
+- **Dependencias aprobadas en la Fase 2:** `better-auth` (versión exacta, incluye el adaptador de Prisma) y `zod`. No agregan build scripts.
+- **Sesión:** dura 7 días y se renueva cada día. En equipos compartidos hay que cerrar sesión.
+- **Login por el endpoint HTTP de Better Auth:** las llamadas internas `auth.api.*` no aplican el límite de intentos, así que el formulario de login no debe convertirse en Server Action.
+- **Límite de intentos:** 5 por minuto por IP en `/sign-in/email`, guardado en la tabla `RateLimit`. Solo se activa en producción y depende de que el proxy de despliegue fije `X-Forwarded-For`: verificarlo en la Fase 12.
+- **Usuarios inactivos:** no pueden iniciar sesión, y `getSession()` invalida de inmediato las sesiones que ya tenían abiertas.
 
 ## Decisiones abiertas
 
