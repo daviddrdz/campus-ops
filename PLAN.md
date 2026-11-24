@@ -66,7 +66,7 @@ Si vas justo de tiempo: fusiona Fase 0 + 1 y Fase 9 + 10, y aplica el recorte de
 ### Estado de las fases
 
 - [x] Fase 0  - [x] Fase 1  - [x] Fase 2  - [x] Fase 3  - [x] Fase 4  - [x] Fase 5  - [x] Fase 6
-- [x] Fase 7  - [x] Fase 8  - [ ] Fase 9  - [ ] Fase 10  - [ ] Fase 11  - [ ] Fase 12
+- [x] Fase 7  - [x] Fase 8  - [x] Fase 9  - [ ] Fase 10  - [ ] Fase 11  - [ ] Fase 12
 
 ## 4. Estrategia de pruebas
 
@@ -278,10 +278,10 @@ Reglas:
 **Depende de:** Fase 8.
 
 **Tareas**
-- [ ] Servicio `notify(...)` y reglas: reporte nuevo → todos los ADMIN activos; asignación → el técnico asignado; reporte resuelto → todos los ADMIN activos.
-- [ ] Se invoca desde los servicios de reportes, después de confirmar la transacción.
-- [ ] Endpoint `GET /api/notifications` (requiere sesión) y acciones para marcar como leída una o todas.
-- [ ] Campana en el encabezado con contador y lista; actualización por polling cada 30–60 s (sin websockets); cada aviso enlaza al reporte.
+- [x] Servicio `notify(...)` y reglas: reporte nuevo → todos los ADMIN activos; asignación → el técnico asignado; reporte resuelto → todos los ADMIN activos. *(Nadie recibe aviso de su propia acción.)*
+- [x] Se invoca desde los servicios de reportes, después de confirmar la transacción.
+- [x] Endpoint `GET /api/notifications` (requiere sesión) y acciones para marcar como leída una o todas.
+- [x] Campana en el encabezado con contador y lista; actualización por polling cada 30–60 s (sin websockets); cada aviso enlaza al reporte. *(Sondeo cada 30 s; solo ADMIN y técnico ven la campana.)*
 
 **Pruebas**
 - Integración: cada evento genera avisos para los destinatarios correctos y para nadie más; usuarios inactivos no reciben; un usuario solo puede leer y marcar sus propios avisos; el contador de no leídas es correcto.
