@@ -25,9 +25,9 @@ Los borradores originales (`CampusOps_Idea_Breve.pdf`, `CampusOps_Propuesta_Empr
 
 ## Estado actual
 
-- Fase actual: **Fase 2 terminada. Siguiente: Fase 3 (Activos y ubicaciones).**
-- Última fase completada: Fase 2 (Autenticación y permisos).
-- Verificado en la Fase 2: `pnpm check`, `pnpm build`, matriz de permisos completa y, sobre el build de producción en navegador con tamaño de celular, login y cierre de sesión de los 4 usuarios, redirección sin sesión y límite de intentos. Falta probarlo en un celular físico.
+- Fase actual: **Fase 3 terminada. Siguiente: Fase 4 (QR y ficha pública).**
+- Última fase completada: Fase 3 (Activos y ubicaciones).
+- Verificado en la Fase 3: `pnpm check`, `pnpm build` y, sobre el build de producción en Chromium con tamaño de celular (320 y 390 px) y con la BD de pruebas, crear, editar y buscar activos y ubicaciones como ADMIN; TECHNICIAN, STAFF y anónimo quedan fuera sin recibir datos del inventario. Falta probar las Fases 2 y 3 en un celular físico.
 - Para correr `pnpm check` y `pnpm build` hacen falta PostgreSQL arriba y un `.env` copiado de `.env.example` con `BETTER_AUTH_SECRET`.
 - Plan: `PLAN.md` — 13 fases (0–12), cada una pensada para **una sesión de Claude Code**, con pruebas propias y un criterio "Listo cuando".
 - Actualiza esta sección al cerrar cada fase.
@@ -103,7 +103,8 @@ src/
     login/
     (staff)/                # área autenticada
       reportes/  reportes/[id]/
-      activos/   activos/[id]/qr/
+      activos/   activos/nuevo/   activos/[id]/editar/   activos/[id]/qr/
+      ubicaciones/
       usuarios/
   server/
     auth/                   # sesión y permisos (can(user, action, resource))
@@ -207,6 +208,10 @@ Mantenimiento preventivo programado, costos de reparación, dashboard/analítica
 - **Login por el endpoint HTTP de Better Auth:** las llamadas internas `auth.api.*` no aplican el límite de intentos, así que el formulario de login no debe convertirse en Server Action.
 - **Límite de intentos:** 5 por minuto por IP en `/sign-in/email`, guardado en la tabla `RateLimit`. Solo se activa en producción y depende de que el proxy de despliegue fije `X-Forwarded-For`: verificarlo en la Fase 12.
 - **Usuarios inactivos:** no pueden iniciar sesión, y `getSession()` invalida de inmediato las sesiones que ya tenían abiertas.
+- **Pantallas sin permiso:** quien tiene sesión pero no el permiso se redirige a `/reportes`; sin sesión, a `/login`.
+- **Activos y ubicaciones no se borran en el MVP:** el plan solo pide listar, ver, crear y editar.
+- **Búsqueda de activos:** ignora mayúsculas y exige todas las palabras, pero distingue acentos (`computo` no encuentra `Cómputo`).
+- **Identidad visual (Fase 3):** la placa metálica de inventario. Tokens en `src/app/globals.css`, tipografías Barlow y Barlow Condensed con `next/font` (sin dependencias nuevas) y la clase `.asset-plate` para el número de inventario.
 
 ## Decisiones abiertas
 

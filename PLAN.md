@@ -65,7 +65,7 @@ Si vas justo de tiempo: fusiona Fase 0 + 1 y Fase 9 + 10, y aplica el recorte de
 
 ### Estado de las fases
 
-- [x] Fase 0  - [x] Fase 1  - [x] Fase 2  - [ ] Fase 3  - [ ] Fase 4  - [ ] Fase 5  - [ ] Fase 6
+- [x] Fase 0  - [x] Fase 1  - [x] Fase 2  - [x] Fase 3  - [ ] Fase 4  - [ ] Fase 5  - [ ] Fase 6
 - [ ] Fase 7  - [ ] Fase 8  - [ ] Fase 9  - [ ] Fase 10  - [ ] Fase 11  - [ ] Fase 12
 
 ## 4. Estrategia de pruebas
@@ -158,10 +158,10 @@ Reglas:
 **Depende de:** Fase 2.
 
 **Tareas**
-- [ ] Servicios `assets` y `locations` (listar, ver, crear, editar) con validadores Zod.
-- [ ] Server Actions con `can()` en cada una.
-- [ ] `publicCode` generado en el servidor al crear, con reintento si hay colisión; **no cambia al editar**.
-- [ ] Pantallas `/activos` (lista con búsqueda simple), `/activos/nuevo`, `/activos/[id]/editar`; ubicaciones en una pantalla sencilla.
+- [x] Servicios `assets` y `locations` (listar, ver, crear, editar) con validadores Zod.
+- [x] Server Actions con `can()` en cada una.
+- [x] `publicCode` generado en el servidor al crear, con reintento si hay colisión; **no cambia al editar**.
+- [x] Pantallas `/activos` (lista con búsqueda simple), `/activos/nuevo`, `/activos/[id]/editar`; ubicaciones en una pantalla sencilla.
 
 **Pruebas**
 - Unitarias: validadores (campos obligatorios, longitudes, tipo de activo válido).
