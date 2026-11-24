@@ -1,3 +1,4 @@
+import { hashPassword } from "better-auth/crypto";
 import type { PrismaClient } from "../src/generated/prisma/client";
 import type { AssetType, UserRole } from "../src/generated/prisma/enums";
 import { generatePublicCode } from "../src/lib/public-code";
@@ -100,12 +101,25 @@ const assets: {
   },
 ];
 
-export async function seedDatabase(prisma: PrismaClient) {
+export async function seedDatabase(
+  prisma: PrismaClient,
+  { userPassword }: { userPassword: string },
+) {
   for (const user of users) {
-    await prisma.user.upsert({
+    const { id: userId } = await prisma.user.upsert({
       where: { email: user.email },
       update: { name: user.name, role: user.role },
       create: { ...user, emailVerified: true },
+      select: { id: true },
+    });
+    const password = await hashPassword(userPassword);
+
+    await prisma.account.upsert({
+      where: {
+        providerId_accountId: { providerId: "credential", accountId: userId },
+      },
+      update: { password },
+      create: { providerId: "credential", accountId: userId, userId, password },
     });
   }
 

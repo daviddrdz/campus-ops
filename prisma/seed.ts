@@ -7,7 +7,13 @@ async function main() {
     throw new Error("El seed de desarrollo no se ejecuta en producción.");
   }
 
-  await seedDatabase(db);
+  const userPassword = process.env.SEED_USER_PASSWORD;
+
+  if (!userPassword) {
+    throw new Error("Falta SEED_USER_PASSWORD. Revisa .env.example.");
+  }
+
+  await seedDatabase(db, { userPassword });
   console.log("Seed aplicado.");
 }
 
