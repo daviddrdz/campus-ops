@@ -3,8 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-
-type NavItem = { href: string; label: string };
+import type { NavItem } from "./nav-items";
 
 export function StaffNav({ items }: { items: NavItem[] }) {
   const pathname = usePathname();

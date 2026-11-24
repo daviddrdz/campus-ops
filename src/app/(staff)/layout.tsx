@@ -1,23 +1,15 @@
 import type { ReactNode } from "react";
 import { Suspense } from "react";
+import { staffNavItems } from "@/components/staff/nav-items";
 import { StaffNav } from "@/components/staff/staff-nav";
 import { Button } from "@/components/ui/button";
 import { userRoleLabels } from "@/lib/labels";
 import { signOutAction } from "@/server/auth/actions";
-import { can } from "@/server/auth/permissions";
 import { requireUser } from "@/server/auth/session";
 
 async function StaffShell({ children }: { children: ReactNode }) {
   const user = await requireUser();
-  const navItems = [
-    { href: "/reportes", label: "Reportes" },
-    ...(can(user, "asset:manage")
-      ? [
-          { href: "/activos", label: "Activos" },
-          { href: "/ubicaciones", label: "Ubicaciones" },
-        ]
-      : []),
-  ];
+  const navItems = staffNavItems(user);
 
   return (
     <>

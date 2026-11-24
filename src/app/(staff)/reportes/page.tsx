@@ -1,19 +1,268 @@
 import type { Metadata } from "next";
-import { requireUser } from "@/server/auth/session";
+import Form from "next/form";
+import Link from "next/link";
+import {
+  ReportPriorityBadge,
+  ReportStatusBadge,
+} from "@/components/reports/report-badges";
+import { Button, buttonVariants } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { NativeSelect } from "@/components/ui/native-select";
+import { ReportStatus } from "@/generated/prisma/enums";
+import { formatDateTime } from "@/lib/dates";
+import { reportStatusLabels } from "@/lib/labels";
+import { cn } from "@/lib/utils";
+import { ASSET_LIMITS } from "@/lib/validators/assets";
+import {
+  STATUS_FILTER_ALL,
+  TECHNICIAN_FILTER_NONE,
+  type ReportFilters,
+} from "@/lib/validators/reports";
+import { requirePagePermission } from "@/server/auth/session";
+import {
+  listReports,
+  listTechnicians,
+  type ReportInbox,
+} from "@/server/reports/queries";
 
 export const metadata: Metadata = {
   title: "Reportes · CampusOps",
 };
 
-export default async function ReportsPage() {
-  await requireUser();
+function statusParam(status: ReportFilters["status"]) {
+  if (status === "open") return "";
+  if (status === "all") return STATUS_FILTER_ALL;
+
+  return status;
+}
+
+function technicianParam(technician: ReportFilters["technician"]) {
+  if (technician === "none") return TECHNICIAN_FILTER_NONE;
+
+  return technician ?? "";
+}
+
+function inboxHref(filters: ReportFilters, page: number) {
+  const params = new URLSearchParams();
+  const entries = {
+    estado: statusParam(filters.status),
+    q: filters.assetQuery,
+    tecnico: technicianParam(filters.technician),
+    pagina: page > 1 ? String(page) : "",
+  };
+
+  for (const [key, value] of Object.entries(entries)) {
+    if (value) params.set(key, value);
+  }
+
+  const query = params.toString();
+
+  return query ? `/reportes?${query}` : "/reportes";
+}
+
+function countLabel(total: number) {
+  return total === 1 ? "1 reporte" : `${total} reportes`;
+}
+
+function isFiltered(filters: ReportFilters) {
+  return (
+    filters.status !== "open" ||
+    Boolean(filters.assetQuery) ||
+    filters.technician !== null
+  );
+}
+
+function ReportRow({ report }: { report: ReportInbox["reports"][number] }) {
+  return (
+    <li>
+      <Link
+        href={`/reportes/${report.id}`}
+        aria-label={`Folio ${report.folio}, ${report.asset.name}, ${reportStatusLabels[report.status]}`}
+        className={cn(
+          "block space-y-1.5 border-l-4 px-4 py-3 outline-none hover:bg-muted/50 focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:ring-inset",
+          report.priority === "HIGH" ? "border-signal" : "border-transparent",
+        )}
+      >
+        <span className="flex items-baseline justify-between gap-3">
+          <span className="font-heading text-xl font-semibold tabular-nums">
+            Folio {report.folio}
+          </span>
+          <ReportStatusBadge status={report.status} />
+        </span>
+        <span className="block font-medium wrap-anywhere">
+          {report.asset.name}
+        </span>
+        <span className="block text-sm wrap-anywhere text-muted-foreground">
+          {report.asset.location.building}, {report.asset.location.room}
+        </span>
+        <span className="line-clamp-2 block text-sm wrap-anywhere">
+          {report.description}
+        </span>
+        <span className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 pt-0.5">
+          <span className="text-sm text-muted-foreground">
+            {report.assignedTo ? report.assignedTo.name : "Sin asignar"}
+          </span>
+          <ReportPriorityBadge priority={report.priority} />
+        </span>
+        <span className="block text-xs text-muted-foreground">
+          <time dateTime={report.createdAt.toISOString()}>
+            {formatDateTime(report.createdAt)}
+          </time>
+        </span>
+      </Link>
+    </li>
+  );
+}
+
+export default async function ReportsPage({
+  searchParams,
+}: PageProps<"/reportes">) {
+  const viewer = await requirePagePermission("report:listInbox");
+  const inbox = await listReports(viewer, await searchParams);
+  const { filters, page, pageCount, total, reports, scope } = inbox;
+  const technicians = scope === "all" ? await listTechnicians(viewer) : [];
 
   return (
-    <section className="mx-auto max-w-2xl space-y-2">
-      <h1>Reportes</h1>
-      <p className="text-sm text-muted-foreground">
-        La bandeja de reportes estará disponible pronto.
+    <section className="mx-auto max-w-3xl space-y-5">
+      <div className="space-y-1">
+        <h1>{scope === "all" ? "Reportes" : "Reportes asignados a ti"}</h1>
+        {viewer.role === "STAFF" ? (
+          <p className="text-sm text-muted-foreground">
+            Puedes consultar todos los reportes; la asignación la hace el
+            administrador.
+          </p>
+        ) : null}
+      </div>
+
+      <Form
+        action="/reportes"
+        role="search"
+        aria-label="Filtrar reportes"
+        className="grid gap-3 rounded-lg border bg-card p-3 sm:grid-cols-2"
+      >
+        <div className="space-y-1.5">
+          <Label htmlFor="filter-status">Estado</Label>
+          <NativeSelect
+            key={filters.status}
+            id="filter-status"
+            name="estado"
+            defaultValue={statusParam(filters.status)}
+          >
+            <option value="">Abiertos</option>
+            {Object.values(ReportStatus).map((status) => (
+              <option key={status} value={status}>
+                {reportStatusLabels[status]}
+              </option>
+            ))}
+            <option value={STATUS_FILTER_ALL}>Todos</option>
+          </NativeSelect>
+        </div>
+
+        {scope === "all" ? (
+          <div className="space-y-1.5">
+            <Label htmlFor="filter-technician">Técnico</Label>
+            <NativeSelect
+              key={filters.technician ?? ""}
+              id="filter-technician"
+              name="tecnico"
+              defaultValue={technicianParam(filters.technician)}
+            >
+              <option value="">Cualquiera</option>
+              <option value={TECHNICIAN_FILTER_NONE}>Sin asignar</option>
+              {technicians.map((technician) => (
+                <option key={technician.id} value={technician.id}>
+                  {technician.isActive
+                    ? technician.name
+                    : `${technician.name} (inactivo)`}
+                </option>
+              ))}
+            </NativeSelect>
+          </div>
+        ) : null}
+
+        <div className="space-y-1.5 sm:col-span-2">
+          <Label htmlFor="filter-asset">Equipo</Label>
+          <div className="flex gap-2">
+            <Input
+              key={filters.assetQuery}
+              id="filter-asset"
+              name="q"
+              type="search"
+              defaultValue={filters.assetQuery}
+              maxLength={ASSET_LIMITS.search}
+              placeholder="Nombre, inventario o ubicación"
+              className="h-11 bg-card"
+            />
+            <Button type="submit" className="h-11 px-4">
+              Filtrar
+            </Button>
+          </div>
+        </div>
+      </Form>
+
+      <p role="status" className="text-sm text-muted-foreground">
+        {countLabel(total)}
+        {pageCount > 1 ? `, página ${page} de ${pageCount}` : ""}
       </p>
+
+      {reports.length === 0 ? (
+        <div className="space-y-2 py-4">
+          {isFiltered(filters) ? (
+            <>
+              <p>Ningún reporte coincide con estos filtros.</p>
+              <Link
+                href="/reportes"
+                className="inline-block py-2 text-sm font-medium text-primary underline underline-offset-4"
+              >
+                Ver los reportes abiertos
+              </Link>
+            </>
+          ) : scope === "all" ? (
+            <p>No hay reportes abiertos. Los nuevos aparecerán aquí.</p>
+          ) : (
+            <p>No tienes reportes abiertos asignados.</p>
+          )}
+        </div>
+      ) : (
+        <ul className="divide-y overflow-hidden rounded-lg border bg-card">
+          {reports.map((report) => (
+            <ReportRow key={report.id} report={report} />
+          ))}
+        </ul>
+      )}
+
+      {pageCount > 1 ? (
+        <nav
+          aria-label="Páginas"
+          className="flex items-center justify-between gap-3"
+        >
+          {page > 1 ? (
+            <Link
+              href={inboxHref(filters, page - 1)}
+              className={buttonVariants({
+                variant: "outline",
+                className: "h-11 px-4",
+              })}
+            >
+              Anterior
+            </Link>
+          ) : (
+            <span />
+          )}
+          {page < pageCount ? (
+            <Link
+              href={inboxHref(filters, page + 1)}
+              className={buttonVariants({
+                variant: "outline",
+                className: "h-11 px-4",
+              })}
+            >
+              Siguiente
+            </Link>
+          ) : null}
+        </nav>
+      ) : null}
     </section>
   );
 }
