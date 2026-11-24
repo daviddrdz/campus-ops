@@ -22,6 +22,7 @@ export const REPORT_OPERATIONS = [
   "start",
   "resolve",
   "reject",
+  "prioritize",
 ] as const;
 
 export type ReportOperation = (typeof REPORT_OPERATIONS)[number];
@@ -64,6 +65,15 @@ const rules: Record<ReportOperation, OperationRule> = {
       REPORTED: "REJECTED",
       ASSIGNED: "REJECTED",
       IN_PROGRESS: "REJECTED",
+    },
+  },
+  // La prioridad no mueve el estado; en un reporte cerrado ya no tiene efecto.
+  prioritize: {
+    action: "report:setPriority",
+    transitions: {
+      REPORTED: "REPORTED",
+      ASSIGNED: "ASSIGNED",
+      IN_PROGRESS: "IN_PROGRESS",
     },
   },
 };

@@ -56,6 +56,7 @@ export const reportEventTypeLabels: Record<ReportEventType, string> = {
   ASSIGNED: "Técnico asignado",
   STATUS_CHANGED: "Cambio de estado",
   COMMENT: "Comentario",
+  PRIORITY_CHANGED: "Cambio de prioridad",
 };
 
 export const notificationTypeLabels: Record<NotificationType, string> = {

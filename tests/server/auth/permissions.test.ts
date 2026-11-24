@@ -29,6 +29,7 @@ const globalMatrix: Row[] = [
   ["report:listInbox", false, true, true, true],
   ["report:assign", false, false, false, true],
   ["report:reject", false, false, false, true],
+  ["report:setPriority", false, false, false, true],
   ["asset:manage", false, false, false, true],
   ["user:manage", false, false, false, true],
 ];

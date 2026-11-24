@@ -2,6 +2,7 @@ import type { Prisma } from "@/generated/prisma/client";
 import type {
   AssetStatus,
   ReportEventType,
+  ReportPriority,
   ReportStatus,
 } from "@/generated/prisma/enums";
 import type { ReportUncheckedUpdateManyInput } from "@/generated/prisma/models";
@@ -12,10 +13,12 @@ import {
   assignReportSchema,
   rejectReportSchema,
   reportInputSchema,
+  reportPrioritySchema,
   statusChangeSchema,
   type AssignReportField,
   type RejectReportField,
   type ReportField,
+  type ReportPriorityField,
   type StatusChangeField,
 } from "@/lib/validators/reports";
 import { assertCan, AuthorizationError } from "@/server/auth/guards";
@@ -29,6 +32,7 @@ import {
   InvalidTransitionError,
   ReportConflictError,
   ReportNotFoundError,
+  UnchangedPriorityError,
 } from "./errors";
 import {
   canAttempt,
@@ -55,6 +59,7 @@ type LoadedReport = ReportState & {
   id: string;
   folio: number;
   assetId: string;
+  priority: ReportPriority;
 };
 
 type PlannedChange = {
@@ -63,6 +68,7 @@ type PlannedChange = {
     type: ReportEventType;
     message?: string | null;
     assigneeId?: string;
+    priority?: ReportPriority;
   };
 };
 
@@ -106,6 +112,7 @@ async function applyOperation(
         status: true,
         assignedToId: true,
         assetId: true,
+        priority: true,
       },
     });
 
@@ -322,6 +329,40 @@ export async function rejectReport(
     data: { resolutionNote: reason },
     event: { type: "STATUS_CHANGED", message: reason },
   }));
+
+  return { ok: true, data: change };
+}
+
+export async function setReportPriority(
+  viewer: Viewer,
+  rawReportId: unknown,
+  rawInput: unknown,
+): Promise<ServiceResult<ReportChange, ReportPriorityField>> {
+  assertCanAttempt(viewer, "prioritize");
+  const reportId = parseReportId(rawReportId);
+  const input = reportPrioritySchema.safeParse(rawInput);
+
+  if (!input.success) {
+    return { ok: false, fieldErrors: fieldErrorsFrom(input.error) };
+  }
+
+  const { priority } = input.data;
+
+  const change = await applyOperation(
+    viewer,
+    reportId,
+    "prioritize",
+    (_tx, report) => {
+      if (report.priority === priority) {
+        throw new UnchangedPriorityError();
+      }
+
+      return {
+        data: { priority },
+        event: { type: "PRIORITY_CHANGED", priority },
+      };
+    },
+  );
 
   return { ok: true, data: change };
 }

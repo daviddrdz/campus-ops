@@ -27,6 +27,7 @@ const operationVerbs: Record<ReportOperation, string> = {
   start: "iniciar",
   resolve: "resolver",
   reject: "rechazar",
+  prioritize: "cambiar la prioridad de",
 };
 
 export class InvalidTransitionError extends ReportDomainError {
@@ -43,6 +44,12 @@ export class InvalidTransitionError extends ReportDomainError {
 export class InvalidAssigneeError extends ReportDomainError {
   constructor(message = "Elige un técnico activo.") {
     super(message);
+  }
+}
+
+export class UnchangedPriorityError extends ReportDomainError {
+  constructor() {
+    super("El reporte ya tiene esa prioridad.");
   }
 }
 

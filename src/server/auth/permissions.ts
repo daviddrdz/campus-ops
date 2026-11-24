@@ -8,6 +8,7 @@ export const ACTIONS = [
   "report:view",
   "report:assign",
   "report:reject",
+  "report:setPriority",
   "report:changeStatus",
   "asset:manage",
   "user:manage",
@@ -62,6 +63,12 @@ const permissions: Record<
     ADMIN: true,
   },
   "report:reject": {
+    anonymous: false,
+    STAFF: false,
+    TECHNICIAN: false,
+    ADMIN: true,
+  },
+  "report:setPriority": {
     anonymous: false,
     STAFF: false,
     TECHNICIAN: false,

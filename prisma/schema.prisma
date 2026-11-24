@@ -54,6 +54,7 @@ enum ReportEventType {
   ASSIGNED
   STATUS_CHANGED
   COMMENT
+  PRIORITY_CHANGED
 }
 
 enum NotificationType {
@@ -204,6 +205,7 @@ model ReportEvent {
   type       ReportEventType
   actorId    String?
   assigneeId String?
+  priority   ReportPriority?
   fromStatus ReportStatus?
   toStatus   ReportStatus?
   message    String?

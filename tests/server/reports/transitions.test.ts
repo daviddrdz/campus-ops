@@ -38,6 +38,7 @@ const viewers: ViewerCase[] = [
 const allowedViewers: Record<ReportOperation, string[]> = {
   assign: ["admin"],
   reject: ["admin"],
+  prioritize: ["admin"],
   start: ["admin", "técnico con su reporte"],
   resolve: ["admin", "técnico con su reporte"],
 };
@@ -58,6 +59,11 @@ const validTransitions: Record<
     REPORTED: "REJECTED",
     ASSIGNED: "REJECTED",
     IN_PROGRESS: "REJECTED",
+  },
+  prioritize: {
+    REPORTED: "REPORTED",
+    ASSIGNED: "ASSIGNED",
+    IN_PROGRESS: "IN_PROGRESS",
   },
 };
 
@@ -109,16 +115,16 @@ describe("transiciones de reportes", () => {
   });
 
   describe("allowedOperations", () => {
-    it("el admin puede asignar o rechazar un reporte nuevo", () => {
+    it("el admin puede asignar, rechazar o priorizar un reporte nuevo", () => {
       expect(
         allowedOperations(admin, { status: "REPORTED", assignedToId: null }),
-      ).toEqual(["assign", "reject"]);
+      ).toEqual(["assign", "reject", "prioritize"]);
     });
 
-    it("el admin puede reasignar, iniciar o rechazar uno asignado", () => {
+    it("el admin puede reasignar, iniciar, rechazar o priorizar uno asignado", () => {
       expect(
         allowedOperations(admin, { status: "ASSIGNED", assignedToId: "tech" }),
-      ).toEqual(["assign", "start", "reject"]);
+      ).toEqual(["assign", "start", "reject", "prioritize"]);
     });
 
     it("el técnico solo inicia su reporte asignado", () => {
@@ -163,7 +169,7 @@ describe("transiciones de reportes", () => {
       ["administrativo", staff, []],
       ["admin inactivo", inactiveAdmin, []],
       ["técnico", technician, ["start", "resolve"]],
-      ["admin", admin, ["assign", "start", "resolve", "reject"]],
+      ["admin", admin, ["assign", "start", "resolve", "reject", "prioritize"]],
     ] as const)("%s", (_name, viewer, expected) => {
       expect(REPORT_OPERATIONS.filter((op) => canAttempt(viewer, op))).toEqual(
         expected,
