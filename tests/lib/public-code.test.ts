@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   generatePublicCode,
+  isPublicCode,
   PUBLIC_CODE_ALPHABET,
   PUBLIC_CODE_LENGTH,
 } from "@/lib/public-code";
@@ -31,5 +32,23 @@ describe("generatePublicCode", () => {
     );
 
     expect(codes.size).toBe(10_000);
+  });
+});
+
+describe("isPublicCode", () => {
+  it("acepta un código generado", () => {
+    expect(isPublicCode(generatePublicCode())).toBe(true);
+  });
+
+  it.each([
+    "",
+    "abc234def56",
+    "abc234def5678",
+    "ABC234DEF567",
+    "abc234def56l",
+    "abc234def56\n",
+    "../abc234def",
+  ])("rechaza %j", (value) => {
+    expect(isPublicCode(value)).toBe(false);
   });
 });
