@@ -65,7 +65,7 @@ Si vas justo de tiempo: fusiona Fase 0 + 1 y Fase 9 + 10, y aplica el recorte de
 
 ### Estado de las fases
 
-- [x] Fase 0  - [x] Fase 1  - [x] Fase 2  - [x] Fase 3  - [x] Fase 4  - [ ] Fase 5  - [ ] Fase 6
+- [x] Fase 0  - [x] Fase 1  - [x] Fase 2  - [x] Fase 3  - [x] Fase 4  - [x] Fase 5  - [ ] Fase 6
 - [ ] Fase 7  - [ ] Fase 8  - [ ] Fase 9  - [ ] Fase 10  - [ ] Fase 11  - [ ] Fase 12
 
 ## 4. Estrategia de pruebas
@@ -198,11 +198,11 @@ Reglas:
 **Depende de:** Fase 1 (y Fase 2 para los permisos).
 
 **Tareas**
-- [ ] `server/reports/transitions.ts`: transiciones permitidas (`REPORTED → ASSIGNED → IN_PROGRESS → RESOLVED`, y `REJECTED` desde estados abiertos) y qué rol puede ejecutarlas. Funciones puras.
-- [ ] `recomputeAssetStatus(tx, assetId)` según las reglas de `CLAUDE.md`.
-- [ ] Servicios en transacción: `createReport`, `assignReport`, `changeReportStatus`, `rejectReport`. Cada uno crea su `ReportEvent` y recalcula el estado del activo.
-- [ ] Errores tipados (transición inválida, sin permiso, reporte no encontrado).
-- [ ] Resolver exige nota de resolución.
+- [x] `server/reports/transitions.ts`: transiciones permitidas (`REPORTED → ASSIGNED → IN_PROGRESS → RESOLVED`, y `REJECTED` desde estados abiertos) y qué rol puede ejecutarlas. Funciones puras.
+- [x] `recomputeAssetStatus(tx, assetId)` según las reglas de `CLAUDE.md`.
+- [x] Servicios en transacción: `createReport`, `assignReport`, `changeReportStatus`, `rejectReport`. Cada uno crea su `ReportEvent` y recalcula el estado del activo.
+- [x] Errores tipados (transición inválida, sin permiso, reporte no encontrado).
+- [x] Resolver exige nota de resolución.
 
 **Pruebas**
 - Unitarias (tabla): cada transición válida e inválida × rol.

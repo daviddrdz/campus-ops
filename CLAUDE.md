@@ -25,10 +25,11 @@ Los borradores originales (`CampusOps_Idea_Breve.pdf`, `CampusOps_Propuesta_Empr
 
 ## Estado actual
 
-- Fase actual: **Fase 4 terminada. Siguiente: Fase 5 (Dominio de reportes, sin interfaz).**
-- Última fase completada: Fase 4 (QR y ficha pública).
+- Fase actual: **Fase 5 terminada. Siguiente: Fase 6 (Reporte público: formulario y anti-abuso).**
+- Última fase completada: Fase 5 (Dominio de reportes, sin interfaz).
 - Verificado en la Fase 3: `pnpm check`, `pnpm build` y, sobre el build de producción en Chromium con tamaño de celular (320 y 390 px) y con la BD de pruebas, crear, editar y buscar activos y ubicaciones como ADMIN; TECHNICIAN, STAFF y anónimo quedan fuera sin recibir datos del inventario. Falta probar las Fases 2 y 3 en un celular físico.
 - Verificado en la Fase 4: `pnpm check`, `pnpm build` y, sobre el build de producción servido en la red local, un celular físico escaneó el QR y abrió la ficha correcta. En Chromium (320 y 390 px): la ficha anónima no envía serie, inventario ni id interno (ni en el HTML ni en la respuesta cruda); los tres estados y los textos largos no desbordan; la etiqueta impresa (PDF) y la de pantalla se decodifican con zbar a la URL exacta; la etiqueta solo la ve el ADMIN.
+- Verificado en la Fase 5: `pnpm check` (469 pruebas). Sin pantallas: el dominio se prueba con tablas de transiciones × rol (`tests/server/reports/`) y con integración contra la BD de pruebas (`tests/integration/reports.test.ts`): estado derivado, bitácora en orden, atomicidad (si falla el evento no cambia nada), permisos, conflicto entre la lectura y la escritura, y reportes simultáneos del mismo activo.
 - Prueba con celular en la red local: `APP_URL=http://<IP-de-la-laptop>:<puerto>`, `pnpm build` y `next start -H 0.0.0.0`. El firewall (ufw) bloquea la entrada: abrir el puerto solo para la red local (`sudo ufw allow from 192.168.1.0/24 to any port <puerto> proto tcp`) y cerrarlo al terminar. Brave en Android falló con `ERR_TOO_MANY_RETRIES` (forzaba HTTPS); con otro navegador funcionó.
 - Para correr `pnpm check` y `pnpm build` hacen falta PostgreSQL arriba y un `.env` copiado de `.env.example` con `BETTER_AUTH_SECRET`.
 - Plan: `PLAN.md` — 13 fases (0–12), cada una pensada para **una sesión de Claude Code**, con pruebas propias y un criterio "Listo cuando".
@@ -46,6 +47,7 @@ Matriz confirmada e implementada en `src/server/auth/permissions.ts`.
 | Ver bandeja de reportes | ❌ | ✅ (solo lectura) | Solo los asignados a él | ✅ todos |
 | Asignar técnico a un reporte | ❌ | ❌ | ❌ | ✅ |
 | Cambiar estado de un reporte | ❌ | ❌ | Solo los suyos | ✅ |
+| Rechazar un reporte | ❌ | ❌ | ❌ | ✅ |
 | Crear/editar activos y generar QR | ❌ | ❌ | ❌ | ✅ |
 | Gestionar usuarios | ❌ | ❌ | ❌ | ✅ |
 
@@ -57,7 +59,7 @@ En código los roles son `ADMIN`, `TECHNICIAN` (Técnico) y `STAFF` (Administrat
 - **Location** — edificio y aula/laboratorio.
 - **Asset** — `publicCode` (aleatorio, va en el QR), número de inventario, nombre, tipo, marca, modelo, número de serie, especificaciones, ubicación, `status`.
 - **Report** — `folio` autoincremental (el que ve quien reporta), activo, descripción, tipo de falla opcional, prioridad (por defecto `MEDIUM`; la define el ADMIN, no quien reporta), `status`, contacto opcional de quien reporta, hash de IP (`reporterIpHash`, para el límite de uso), técnico asignado, fechas, nota de resolución.
-- **ReportEvent** — bitácora de cada reporte (creado, asignado, cambio de estado, comentario) con actor y fecha. Es lo que alimenta "en qué parte del proceso está" y el historial.
+- **ReportEvent** — bitácora de cada reporte (creado, asignado, cambio de estado, comentario) con actor, estado anterior y nuevo, mensaje, técnico asignado (`assigneeId`, solo en asignaciones) y fecha. Es lo que alimenta "en qué parte del proceso está" y el historial.
 - **Notification** — destinatario, reporte, tipo, mensaje, fecha de lectura.
 
 Estados (nombres en código en inglés, etiquetas en español en `lib/labels.ts`):
@@ -217,6 +219,12 @@ Mantenimiento preventivo programado, costos de reparación, dashboard/analítica
 - **Datos públicos del activo (Fase 4):** nombre, tipo, marca, modelo, ubicación (edificio y aula), especificaciones y estado. **No** serie, inventario ni id interno. La lista vive en `publicAssetSelect` (`src/server/assets/view.ts`) y la prueba de no filtración (`tests/integration/asset-view.test.ts`) exige exactamente esos campos.
 - **Etiqueta QR:** imprime nombre, ubicación y el `publicCode` (no el número de inventario, porque queda a la vista de cualquiera). Mide 70 mm de ancho al imprimir.
 - **Código inexistente en `/a/[code]`:** muestra la pantalla "No encontramos este equipo" con `noindex`, pero el HTTP queda en 200. Con Cache Components la respuesta empieza antes de consultar la BD; un 404 HTTP real exigiría un `proxy.ts` con consulta a la BD, y se descartó. Los códigos con formato inválido se rechazan sin consultar la BD.
+- **Transiciones (Fase 5):** flujo lineal estricto `REPORTED → ASSIGNED → IN_PROGRESS → RESOLVED`; no se resuelve directo desde `ASSIGNED` y no se reabre un reporte cerrado. `REJECTED` desde cualquier estado abierto, solo ADMIN (acción `report:reject`). Iniciar y resolver: ADMIN o el técnico asignado. La tabla vive en `src/server/reports/transitions.ts`; el permiso se revisa antes que el estado.
+- **Reasignar técnico:** el ADMIN puede cambiar el técnico en `ASSIGNED` o `IN_PROGRESS`; el estado se conserva. No se reasigna al mismo técnico. Solo se asigna a usuarios `TECHNICIAN` activos. El técnico anterior pierde acceso al reporte.
+- **Bitácora de asignaciones:** `ReportEvent.assigneeId` (migración `add_report_event_assignee`) guarda a quién se asignó en cada asignación o reasignación.
+- **Notas:** resolver exige nota (`resolutionNote` y mensaje del evento, `resolvedAt`). Rechazar exige motivo, que se guarda en `resolutionNote` y en el mensaje del evento (`resolvedAt` queda vacío). Iniciar admite una nota opcional.
+- **Servicios de reportes (`src/server/reports/service.ts`):** `createReport(viewer, publicCode, input, { reporterIpHash })` recibe el código público, nunca el id interno; el hash de IP lo pone el servidor. La entrada inválida vuelve como `fieldErrors`; lo demás se lanza: `AuthorizationError` o una subclase de `ReportDomainError` (`ReportNotFoundError`, `AssetNotFoundError`, `InvalidTransitionError`, `InvalidAssigneeError`, `ReportConflictError`) con mensaje en español listo para mostrar.
+- **Concurrencia:** cada cambio actualiza el reporte solo si su estado y técnico siguen como se leyeron (si no, `ReportConflictError`). `recomputeAssetStatus` bloquea la fila del activo (`FOR NO KEY UPDATE`) para que dos transacciones no dejen un estado viejo.
 - **Dependencias aprobadas en la Fase 4:** `qrcode` 1.5.4 y `@types/qrcode` 1.5.6 (versiones exactas, sin build scripts). El QR se genera como SVG en el servidor, con corrección de errores M.
 
 ## Decisiones abiertas
