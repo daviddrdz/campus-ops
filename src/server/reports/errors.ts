@@ -46,6 +46,18 @@ export class InvalidAssigneeError extends ReportDomainError {
   }
 }
 
+const rateLimitMessages = {
+  ip: "Se enviaron demasiados reportes desde esta red en la última hora. Inténtalo más tarde o avisa al personal del campus.",
+  asset:
+    "Este equipo ya recibió varios reportes en la última hora. Inténtalo más tarde o avisa al personal del campus.",
+} as const;
+
+export class ReportRateLimitError extends ReportDomainError {
+  constructor(readonly limit: keyof typeof rateLimitMessages) {
+    super(rateLimitMessages[limit]);
+  }
+}
+
 export class ReportConflictError extends ReportDomainError {
   constructor() {
     super(

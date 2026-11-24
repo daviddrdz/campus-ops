@@ -22,6 +22,7 @@ import { assertCan, AuthorizationError } from "@/server/auth/guards";
 import type { Viewer } from "@/server/auth/permissions";
 import { db } from "@/server/db";
 import { recomputeAssetStatus } from "./asset-status";
+import { assertWithinAnonymousLimits, lockReporterIp } from "./rate-limit";
 import {
   AssetNotFoundError,
   InvalidAssigneeError,
@@ -175,21 +176,37 @@ export async function createReport(
     return { ok: false, fieldErrors: fieldErrorsFrom(input.error) };
   }
 
+  // Quien tiene sesión queda en la bitácora: no se limita ni se guarda su IP.
+  const anonymous = !viewer?.isActive;
+  const reporterIpHash = anonymous ? (context.reporterIpHash ?? null) : null;
+
   const report = await db.$transaction(async (tx) => {
-    const asset = await tx.asset.findUnique({
-      where: { publicCode: rawAssetCode },
-      select: { id: true },
-    });
+    if (reporterIpHash) {
+      await lockReporterIp(tx, reporterIpHash);
+    }
+
+    // Bloquea el activo desde el inicio para que el conteo por activo no se cruce
+    // con otro reporte simultáneo. Mismo bloqueo que toma recomputeAssetStatus.
+    const [asset] = await tx.$queryRaw<{ id: string }[]>`
+      SELECT "id" FROM "Asset" WHERE "publicCode" = ${rawAssetCode} FOR NO KEY UPDATE
+    `;
 
     if (!asset) {
       throw new AssetNotFoundError();
+    }
+
+    if (anonymous) {
+      await assertWithinAnonymousLimits(tx, {
+        assetId: asset.id,
+        reporterIpHash,
+      });
     }
 
     const created = await tx.report.create({
       data: {
         ...input.data,
         assetId: asset.id,
-        reporterIpHash: context.reporterIpHash ?? null,
+        reporterIpHash,
       },
       select: { id: true, folio: true, status: true },
     });
