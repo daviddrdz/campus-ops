@@ -65,7 +65,7 @@ Si vas justo de tiempo: fusiona Fase 0 + 1 y Fase 9 + 10, y aplica el recorte de
 
 ### Estado de las fases
 
-- [x] Fase 0  - [x] Fase 1  - [x] Fase 2  - [x] Fase 3  - [x] Fase 4  - [x] Fase 5  - [ ] Fase 6
+- [x] Fase 0  - [x] Fase 1  - [x] Fase 2  - [x] Fase 3  - [x] Fase 4  - [x] Fase 5  - [x] Fase 6
 - [ ] Fase 7  - [ ] Fase 8  - [ ] Fase 9  - [ ] Fase 10  - [ ] Fase 11  - [ ] Fase 12
 
 ## 4. Estrategia de pruebas
@@ -220,12 +220,12 @@ Reglas:
 **Depende de:** Fases 4 y 5.
 
 **Tareas**
-- [ ] `/a/[code]/reportar`: descripción (obligatoria), tipo de falla (opciones rápidas), nombre y correo opcionales. Pensado para completarse en segundos.
-- [ ] Server Action `submitReport` con validación Zod.
-- [ ] Anti-abuso: campo trampa (honeypot) y límite de reportes por IP y por activo en una ventana de tiempo (guardar solo el hash de la IP con un secreto de entorno).
-- [ ] Pantalla de confirmación con el folio.
-- [ ] Si el activo ya tiene un reporte abierto, avisar a quien reporta sin bloquearlo.
-- [ ] Opcional: primer despliegue de vista previa para probar con datos móviles.
+- [x] `/a/[code]/reportar`: descripción (obligatoria), tipo de falla (opciones rápidas), nombre y correo opcionales. Pensado para completarse en segundos.
+- [x] Server Action `submitReport` con validación Zod.
+- [x] Anti-abuso: campo trampa (honeypot) y límite de reportes por IP y por activo en una ventana de tiempo (guardar solo el hash de la IP con un secreto de entorno).
+- [x] Pantalla de confirmación con el folio.
+- [x] Si el activo ya tiene un reporte abierto, avisar a quien reporta sin bloquearlo.
+- [ ] Opcional: primer despliegue de vista previa para probar con datos móviles. *(No se hizo: el dominio y el proveedor se deciden en la Fase 12.)*
 
 **Pruebas**
 - Unitarias: validador (vacío, demasiado largo, correo mal formado); hash de IP estable y no reversible a simple vista.
@@ -391,7 +391,7 @@ Sacrifica en este orden, de lo primero a lo último:
 Confirmar con el usuario (ver también "Decisiones abiertas" en `CLAUDE.md`):
 
 1. ¿Horas reales disponibles por día y fecha exacta de entrega?
-2. ¿Quien reporta recibe seguimiento por correo? (Fases 6 y 10.)
+2. ~~¿Quien reporta recibe seguimiento por correo?~~ Decidido en la Fase 6: no en el MVP (ver `CLAUDE.md`).
 3. ¿Dónde se desplegará la demo y con qué dominio? (Fase 12.)
 
 ## 10. Backlog posterior al MVP

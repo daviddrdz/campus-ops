@@ -25,13 +25,14 @@ Los borradores originales (`CampusOps_Idea_Breve.pdf`, `CampusOps_Propuesta_Empr
 
 ## Estado actual
 
-- Fase actual: **Fase 5 terminada. Siguiente: Fase 6 (Reporte público: formulario y anti-abuso).**
-- Última fase completada: Fase 5 (Dominio de reportes, sin interfaz).
+- Fase actual: **Fase 6 terminada. Siguiente: Fase 7 (Bandeja de reportes y asignación).**
+- Última fase completada: Fase 6 (Reporte público: formulario y anti-abuso).
 - Verificado en la Fase 3: `pnpm check`, `pnpm build` y, sobre el build de producción en Chromium con tamaño de celular (320 y 390 px) y con la BD de pruebas, crear, editar y buscar activos y ubicaciones como ADMIN; TECHNICIAN, STAFF y anónimo quedan fuera sin recibir datos del inventario. Falta probar las Fases 2 y 3 en un celular físico.
 - Verificado en la Fase 4: `pnpm check`, `pnpm build` y, sobre el build de producción servido en la red local, un celular físico escaneó el QR y abrió la ficha correcta. En Chromium (320 y 390 px): la ficha anónima no envía serie, inventario ni id interno (ni en el HTML ni en la respuesta cruda); los tres estados y los textos largos no desbordan; la etiqueta impresa (PDF) y la de pantalla se decodifican con zbar a la URL exacta; la etiqueta solo la ve el ADMIN.
 - Verificado en la Fase 5: `pnpm check` (469 pruebas). Sin pantallas: el dominio se prueba con tablas de transiciones × rol (`tests/server/reports/`) y con integración contra la BD de pruebas (`tests/integration/reports.test.ts`): estado derivado, bitácora en orden, atomicidad (si falla el evento no cambia nada), permisos, conflicto entre la lectura y la escritura, y reportes simultáneos del mismo activo.
+- Verificado en la Fase 6: `pnpm check` (503 pruebas), `pnpm build` y, sobre el build de producción con la BD de pruebas en Chromium (320 y 390 px): ficha → «Reportar falla» → error con descripción vacía → envío → folio → la ficha pasa a «Falla reportada»; aviso de reporte abierto; honeypot lleno no crea nada; el sexto reporte del mismo activo en una hora muestra el mensaje de límite; código inexistente → «No encontramos este equipo»; sin desbordes y sin datos de staff en el HTML; en la BD queda el hash de la IP, no la IP. Las pruebas de envíos simultáneos fallan si se quita el bloqueo. Con un celular físico en la red local: se escaneó el QR, se envió un reporte anónimo y el activo pasó a «Falla reportada», con su evento y el hash de la IP.
 - Prueba con celular en la red local: `APP_URL=http://<IP-de-la-laptop>:<puerto>`, `pnpm build` y `next start -H 0.0.0.0`. El firewall (ufw) bloquea la entrada: abrir el puerto solo para la red local (`sudo ufw allow from 192.168.1.0/24 to any port <puerto> proto tcp`) y cerrarlo al terminar. Brave en Android falló con `ERR_TOO_MANY_RETRIES` (forzaba HTTPS); con otro navegador funcionó.
-- Para correr `pnpm check` y `pnpm build` hacen falta PostgreSQL arriba y un `.env` copiado de `.env.example` con `BETTER_AUTH_SECRET`.
+- Para correr `pnpm check` y `pnpm build` hacen falta PostgreSQL arriba y un `.env` copiado de `.env.example` con `BETTER_AUTH_SECRET` e `IP_HASH_SECRET`.
 - Plan: `PLAN.md` — 13 fases (0–12), cada una pensada para **una sesión de Claude Code**, con pruebas propias y un criterio "Listo cuando".
 - Actualiza esta sección al cerrar cada fase.
 
@@ -223,17 +224,20 @@ Mantenimiento preventivo programado, costos de reparación, dashboard/analítica
 - **Reasignar técnico:** el ADMIN puede cambiar el técnico en `ASSIGNED` o `IN_PROGRESS`; el estado se conserva. No se reasigna al mismo técnico. Solo se asigna a usuarios `TECHNICIAN` activos. El técnico anterior pierde acceso al reporte.
 - **Bitácora de asignaciones:** `ReportEvent.assigneeId` (migración `add_report_event_assignee`) guarda a quién se asignó en cada asignación o reasignación.
 - **Notas:** resolver exige nota (`resolutionNote` y mensaje del evento, `resolvedAt`). Rechazar exige motivo, que se guarda en `resolutionNote` y en el mensaje del evento (`resolvedAt` queda vacío). Iniciar admite una nota opcional.
-- **Servicios de reportes (`src/server/reports/service.ts`):** `createReport(viewer, publicCode, input, { reporterIpHash })` recibe el código público, nunca el id interno; el hash de IP lo pone el servidor. La entrada inválida vuelve como `fieldErrors`; lo demás se lanza: `AuthorizationError` o una subclase de `ReportDomainError` (`ReportNotFoundError`, `AssetNotFoundError`, `InvalidTransitionError`, `InvalidAssigneeError`, `ReportConflictError`) con mensaje en español listo para mostrar.
+- **Servicios de reportes (`src/server/reports/service.ts`):** `createReport(viewer, publicCode, input, { reporterIpHash })` recibe el código público, nunca el id interno; el hash de IP lo pone el servidor. La entrada inválida vuelve como `fieldErrors`; lo demás se lanza: `AuthorizationError` o una subclase de `ReportDomainError` (`ReportNotFoundError`, `AssetNotFoundError`, `InvalidTransitionError`, `InvalidAssigneeError`, `ReportConflictError`, `ReportRateLimitError`) con mensaje en español listo para mostrar.
 - **Concurrencia:** cada cambio actualiza el reporte solo si su estado y técnico siguen como se leyeron (si no, `ReportConflictError`). `recomputeAssetStatus` bloquea la fila del activo (`FOR NO KEY UPDATE`) para que dos transacciones no dejen un estado viejo.
+- **Reporte público (Fase 6):** `/a/[code]/reportar` con la Server Action `submitReportAction` (`src/server/reports/actions.ts`). Solo la descripción es obligatoria; el tipo de falla se elige con botones y empieza en «No sé» (se guarda `null`). La confirmación muestra el folio en la misma pantalla. El aviso de reporte abierto sale del estado público del activo (`FAULT_REPORTED` / `IN_MAINTENANCE`), sin exponer los reportes, y se oculta tras enviar.
+- **Seguimiento a quien reporta:** no en el MVP. Nombre y correo son opcionales y solo sirven para que el personal lo contacte; el folio se muestra en pantalla.
+- **Anti-abuso (Fase 6):** campo trampa `website` (si llega lleno, error genérico sin crear nada) y límites solo para anónimos, en una ventana de 1 hora: 10 reportes por IP (alto porque en el wifi del campus muchos comparten IP) y 5 por activo (de cualquier IP, incluidos los del personal). Viven en `src/server/reports/rate-limit.ts` y se revisan dentro de la transacción de `createReport`, con un candado por IP (`pg_advisory_xact_lock`) y la fila del activo bloqueada para que los envíos simultáneos no rebasen el tope. Quien tiene sesión no tiene límite y no se guarda su IP. Sin IP conocida solo aplica el límite por activo.
+- **IP de quien reporta:** se toma del primer salto de `X-Forwarded-For` (o `X-Real-IP`) en `src/server/client-ip.ts` y se guarda solo como HMAC-SHA256 con `IP_HASH_SECRET` (variable obligatoria, distinta de `BETTER_AUTH_SECRET`). Sin un proxy que fije el encabezado, el cliente puede inventarlo: verificarlo en la Fase 12, igual que el límite de login. Las IPv6 se cuentan por dirección completa, no por prefijo /64.
 - **Dependencias aprobadas en la Fase 4:** `qrcode` 1.5.4 y `@types/qrcode` 1.5.6 (versiones exactas, sin build scripts). El QR se genera como SVG en el servidor, con corrección de errores M.
 
 ## Decisiones abiertas
 
 Preguntar al usuario cuando se llegue a ellas (la propuesta actual está en este archivo):
 
-1. ¿Quien reporta recibe seguimiento por correo?
-2. ¿Foto en el reporte? (propuesta: después del MVP).
-3. Dominio/URL estable de despliegue (los QR dependen de él).
+1. ¿Foto en el reporte? (propuesta: después del MVP).
+2. Dominio/URL estable de despliegue (los QR dependen de él).
 
 ## Cómo trabajar en este proyecto
 
