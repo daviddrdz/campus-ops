@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AssetForm } from "@/components/assets/asset-form";
 import { AssetStatus } from "@/components/assets/asset-status";
@@ -37,6 +38,12 @@ export default async function EditAssetPage({
           Código del QR: <span className="font-medium">{asset.publicCode}</span>
           . No cambia al editar, así las etiquetas impresas siguen funcionando.
         </p>
+        <Link
+          href={`/activos/${asset.id}/qr`}
+          className="inline-block py-2 text-sm font-medium text-primary underline underline-offset-4"
+        >
+          Ver etiqueta QR
+        </Link>
       </div>
       <AssetForm
         action={updateAssetAction.bind(null, asset.id)}

@@ -21,7 +21,7 @@ async function StaffShell({ children }: { children: ReactNode }) {
 
   return (
     <>
-      <header className="border-b bg-card">
+      <header className="border-b bg-card print:hidden">
         <div className="mx-auto flex max-w-3xl items-center justify-between gap-3 px-4 py-3">
           <div className="min-w-0">
             <p className="truncate text-sm font-medium">{user.name}</p>
@@ -37,7 +37,7 @@ async function StaffShell({ children }: { children: ReactNode }) {
         </div>
         <StaffNav items={navItems} />
       </header>
-      <main className="flex-1 px-4 py-6">{children}</main>
+      <main className="flex-1 px-4 py-6 print:p-0">{children}</main>
     </>
   );
 }

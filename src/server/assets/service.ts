@@ -111,6 +111,25 @@ export async function getAsset(viewer: Viewer, rawId: unknown) {
   });
 }
 
+export async function getAssetLabel(viewer: Viewer, rawId: unknown) {
+  assertCan(viewer, "asset:manage");
+  const id = recordIdSchema.safeParse(rawId);
+
+  if (!id.success) {
+    return null;
+  }
+
+  return db.asset.findUnique({
+    where: { id: id.data },
+    select: {
+      id: true,
+      publicCode: true,
+      name: true,
+      location: { select: { building: true, room: true } },
+    },
+  });
+}
+
 export async function createAsset(
   viewer: Viewer,
   rawInput: unknown,
