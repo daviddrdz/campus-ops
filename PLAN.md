@@ -66,7 +66,7 @@ Si vas justo de tiempo: fusiona Fase 0 + 1 y Fase 9 + 10, y aplica el recorte de
 ### Estado de las fases
 
 - [x] Fase 0  - [x] Fase 1  - [x] Fase 2  - [x] Fase 3  - [x] Fase 4  - [x] Fase 5  - [x] Fase 6
-- [ ] Fase 7  - [ ] Fase 8  - [ ] Fase 9  - [ ] Fase 10  - [ ] Fase 11  - [ ] Fase 12
+- [x] Fase 7  - [ ] Fase 8  - [ ] Fase 9  - [ ] Fase 10  - [ ] Fase 11  - [ ] Fase 12
 
 ## 4. Estrategia de pruebas
 
@@ -241,10 +241,10 @@ Reglas:
 **Depende de:** Fase 6.
 
 **Tareas**
-- [ ] `/reportes`: lista con filtros por estado, activo y técnico; paginación simple. ADMIN ve todos, STAFF ve todos en solo lectura.
-- [ ] `/reportes/[id]`: detalle con línea de tiempo de eventos.
-- [ ] Asignar técnico (solo técnicos activos), definir la prioridad y rechazar con motivo (solo ADMIN).
-- [ ] Navegación del área staff según el rol.
+- [x] `/reportes`: lista con filtros por estado, activo y técnico; paginación simple. ADMIN ve todos, STAFF ve todos en solo lectura.
+- [x] `/reportes/[id]`: detalle con línea de tiempo de eventos.
+- [x] Asignar técnico (solo técnicos activos), definir la prioridad y rechazar con motivo (solo ADMIN).
+- [x] Navegación del área staff según el rol.
 
 **Pruebas**
 - Integración: la lista respeta el rol (ADMIN y STAFF todos; TECHNICIAN solo los suyos); los filtros funcionan; asignar a un usuario que no es técnico se rechaza; STAFF no puede asignar.
