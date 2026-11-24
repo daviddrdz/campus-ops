@@ -19,6 +19,9 @@ services:
       interval: 5s
       timeout: 3s
       retries: 10
+      # La primera inicialización tarda cerca de un minuto en btrfs.
+      start_period: 120s
+      start_interval: 2s
 
 volumes:
   postgres_data:
