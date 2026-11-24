@@ -1,0 +1,6 @@
+.next
+coverage
+pnpm-lock.yaml
+next-env.d.ts
+CLAUDE.md
+PLAN.md

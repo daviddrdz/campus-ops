@@ -1,0 +1,8 @@
+# Política de seguridad de dependencias. Ver "Entorno seguro con pnpm" en CLAUDE.md.
+# Los build scripts quedan bloqueados salvo aprobación explícita, paquete por paquete.
+allowBuilds:
+  sharp: false
+  unrs-resolver: false
+strictDepBuilds: true
+minimumReleaseAge: 1440
+blockExoticSubdeps: true

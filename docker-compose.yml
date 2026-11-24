@@ -1,0 +1,24 @@
+services:
+  postgres:
+    image: postgres:18.7-alpine3.24
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-campusops}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-campusops_dev}
+      POSTGRES_DB: ${POSTGRES_DB:-campusops_dev}
+    ports:
+      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql
+      - ./docker/postgres/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB} && psql -U $${POSTGRES_USER} -d campusops_test -c 'SELECT 1'",
+        ]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  postgres_data:
