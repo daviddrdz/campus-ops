@@ -66,7 +66,7 @@ Si vas justo de tiempo: fusiona Fase 0 + 1 y Fase 9 + 10, y aplica el recorte de
 ### Estado de las fases
 
 - [x] Fase 0  - [x] Fase 1  - [x] Fase 2  - [x] Fase 3  - [x] Fase 4  - [x] Fase 5  - [x] Fase 6
-- [x] Fase 7  - [ ] Fase 8  - [ ] Fase 9  - [ ] Fase 10  - [ ] Fase 11  - [ ] Fase 12
+- [x] Fase 7  - [x] Fase 8  - [ ] Fase 9  - [ ] Fase 10  - [ ] Fase 11  - [ ] Fase 12
 
 ## 4. Estrategia de pruebas
 
@@ -260,9 +260,9 @@ Reglas:
 **Depende de:** Fase 7.
 
 **Tareas**
-- [ ] `/mis-reportes` para TECHNICIAN: ver asignados, pasar a `IN_PROGRESS`, agregar notas, resolver con nota de resolución.
-- [ ] Completar el DTO de staff en `/a/[code]`: serie, inventario, técnico asignado, etapa actual del proceso e historial de reportes del equipo.
-- [ ] La ficha elige el DTO según la sesión (público vs. staff).
+- [x] `/mis-reportes` para TECHNICIAN: ver asignados, pasar a `IN_PROGRESS`, agregar notas, resolver con nota de resolución. *(La lista está en `/mis-reportes`; iniciar, anotar y resolver se hacen en `/reportes/[id]`.)*
+- [x] Completar el DTO de staff en `/a/[code]`: serie, inventario, técnico asignado, etapa actual del proceso e historial de reportes del equipo.
+- [x] La ficha elige el DTO según la sesión (público vs. staff).
 
 **Pruebas**
 - Integración: un TECHNICIAN no actúa sobre reportes de otros; resolver sin nota falla; el DTO de staff incluye los campos extra solo con sesión de staff.
