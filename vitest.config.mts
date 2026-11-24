@@ -35,7 +35,11 @@ export default defineConfig({
           include: ["tests/integration/**/*.test.ts"],
           globalSetup: ["./tests/integration/global-setup.ts"],
           fileParallelism: false,
-          env: { DATABASE_URL: testDatabaseUrl },
+          env: {
+            DATABASE_URL: testDatabaseUrl,
+            APP_URL: "http://localhost:3000",
+            BETTER_AUTH_SECRET: "secreto-solo-para-pruebas-de-integracion",
+          },
         },
       },
     ],
