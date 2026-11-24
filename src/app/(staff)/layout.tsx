@@ -1,27 +1,41 @@
 import type { ReactNode } from "react";
 import { Suspense } from "react";
+import { StaffNav } from "@/components/staff/staff-nav";
 import { Button } from "@/components/ui/button";
 import { userRoleLabels } from "@/lib/labels";
 import { signOutAction } from "@/server/auth/actions";
+import { can } from "@/server/auth/permissions";
 import { requireUser } from "@/server/auth/session";
 
 async function StaffShell({ children }: { children: ReactNode }) {
   const user = await requireUser();
+  const navItems = [
+    { href: "/reportes", label: "Reportes" },
+    ...(can(user, "asset:manage")
+      ? [
+          { href: "/activos", label: "Activos" },
+          { href: "/ubicaciones", label: "Ubicaciones" },
+        ]
+      : []),
+  ];
 
   return (
     <>
-      <header className="flex items-center justify-between gap-3 border-b px-4 py-3">
-        <div className="min-w-0">
-          <p className="truncate text-sm font-medium">{user.name}</p>
-          <p className="text-xs text-muted-foreground">
-            {userRoleLabels[user.role]}
-          </p>
+      <header className="border-b bg-card">
+        <div className="mx-auto flex max-w-3xl items-center justify-between gap-3 px-4 py-3">
+          <div className="min-w-0">
+            <p className="truncate text-sm font-medium">{user.name}</p>
+            <p className="text-xs text-muted-foreground">
+              {userRoleLabels[user.role]}
+            </p>
+          </div>
+          <form action={signOutAction}>
+            <Button type="submit" variant="outline" className="h-10 px-3">
+              Cerrar sesión
+            </Button>
+          </form>
         </div>
-        <form action={signOutAction}>
-          <Button type="submit" variant="outline" className="h-10">
-            Cerrar sesión
-          </Button>
-        </form>
+        <StaffNav items={navItems} />
       </header>
       <main className="flex-1 px-4 py-6">{children}</main>
     </>
