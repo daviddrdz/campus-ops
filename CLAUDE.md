@@ -25,9 +25,10 @@ Los borradores originales (`CampusOps_Idea_Breve.pdf`, `CampusOps_Propuesta_Empr
 
 ## Estado actual
 
-- Fase actual: **Fase 0, implementada. Falta comprobar que PostgreSQL arranca en Docker para cerrarla.**
-- Última fase completada: ninguna.
-- Verificado en la Fase 0: `pnpm check`, `pnpm build`, `pnpm install --frozen-lockfile` en carpeta limpia, página de inicio y `GET /api/health`.
+- Fase actual: **Fase 1 terminada. Siguiente: Fase 2 (Autenticación y permisos).**
+- Última fase completada: Fase 1 (Base de datos y seed).
+- Verificado en la Fase 1: `pnpm check` con pruebas de integración contra `campusops_test`, `pnpm build`, `pnpm db:reset` desde cero, seed repetible e instalación limpia con `--frozen-lockfile`.
+- Para correr `pnpm check` hacen falta PostgreSQL arriba y un `.env` copiado de `.env.example`.
 - Plan: `PLAN.md` — 13 fases (0–12), cada una pensada para **una sesión de Claude Code**, con pruebas propias y un criterio "Listo cuando".
 - Actualiza esta sección al cerrar cada fase.
 
@@ -48,17 +49,20 @@ En código los roles son `ADMIN`, `TECHNICIAN` (Técnico) y `STAFF` (Administrat
 
 ## Modelo de dominio (propuesta)
 
-- **User** — nombre, correo, rol (`ADMIN | TECHNICIAN | STAFF`), activo/inactivo. Lo gestiona la librería de auth.
+- **User** — nombre, correo, `emailVerified`, imagen opcional, rol (`ADMIN | TECHNICIAN | STAFF`), activo/inactivo. Lo gestiona la librería de auth.
 - **Location** — edificio y aula/laboratorio.
 - **Asset** — `publicCode` (aleatorio, va en el QR), número de inventario, nombre, tipo, marca, modelo, número de serie, especificaciones, ubicación, `status`.
-- **Report** — `folio` autoincremental (el que ve quien reporta), activo, descripción, tipo de falla, prioridad, `status`, contacto opcional de quien reporta, hash de IP (`reporterIpHash`, para el límite de uso), técnico asignado, fechas, nota de resolución.
+- **Report** — `folio` autoincremental (el que ve quien reporta), activo, descripción, tipo de falla opcional, prioridad (por defecto `MEDIUM`; la define el ADMIN, no quien reporta), `status`, contacto opcional de quien reporta, hash de IP (`reporterIpHash`, para el límite de uso), técnico asignado, fechas, nota de resolución.
 - **ReportEvent** — bitácora de cada reporte (creado, asignado, cambio de estado, comentario) con actor y fecha. Es lo que alimenta "en qué parte del proceso está" y el historial.
 - **Notification** — destinatario, reporte, tipo, mensaje, fecha de lectura.
 
 Estados (nombres en código en inglés, etiquetas en español en `lib/labels.ts`):
 
 - `AssetStatus`: `OPERATIONAL` (Funcionando) · `FAULT_REPORTED` (Falla reportada) · `IN_MAINTENANCE` (En mantenimiento)
-- `ReportStatus`: `REPORTED` (Reportado) → `ASSIGNED` (Asignado) → `IN_PROGRESS` (En proceso) → `RESOLVED` (Resuelto). Además `REJECTED` (Rechazado: duplicado o falsa alarma), solo ADMIN.
+- `ReportStatus`: `REPORTED` (Reportado) → `ASSIGNED` (Asignado) → `IN_PROGRESS` (En proceso) → `RESOLVED` (Resuelto, estado final; no existe `CLOSED`). Además `REJECTED` (Rechazado: duplicado o falsa alarma), solo ADMIN.
+- `ReportPriority`: `LOW` (Baja) · `MEDIUM` (Media) · `HIGH` (Alta)
+- `FaultType`: `HARDWARE` (Daño físico) · `SOFTWARE` (Programas o sistema) · `CONNECTIVITY` (Conexión o red) · `POWER` (No enciende) · `OTHER` (Otro)
+- `AssetType`: `COMPUTER` (Computadora) · `DISPLAY` (Pantalla) · `PROJECTOR` (Proyector) · `LAB_EQUIPMENT` (Equipo de laboratorio) · `OTHER` (Otro)
 
 ## Reglas de negocio importantes
 
@@ -112,7 +116,7 @@ tests/
 
 ## Comandos
 
-*(Los scripts `db:*` llegan en la Fase 1; el resto ya existe. Solo pnpm.)*
+*(Solo pnpm.)*
 
 ```bash
 pnpm install --frozen-lockfile   # instalar respetando el lockfile
@@ -124,9 +128,10 @@ pnpm test                        # pruebas (Vitest)
 pnpm test:watch                  # pruebas en modo observación
 pnpm format                      # formato con Prettier
 pnpm check                       # lint + typecheck + test: condición para cerrar cada fase
-pnpm db:migrate                  # migraciones en desarrollo
+pnpm db:generate                 # regenerar el cliente de Prisma
+pnpm db:migrate --name <nombre>  # migraciones en desarrollo
 pnpm db:seed                     # datos de demostración
-pnpm db:reset                    # BD desde cero: migraciones + seed
+pnpm db:reset                    # BD desde cero: migraciones + seed (solo campusops_dev local)
 pnpm db:studio                   # explorar la BD
 sudo systemctl start docker      # iniciar Docker (no arranca solo)
 sudo docker compose up -d --wait # PostgreSQL local (desarrollo y pruebas)
@@ -179,21 +184,24 @@ Mantenimiento preventivo programado, costos de reparación, dashboard/analítica
 
 - **Docker con `sudo` al usarlo:** el usuario no se agrega al grupo `docker`, que equivale a acceso de root. PostgreSQL solo escucha en `127.0.0.1`.
 - **PostgreSQL 18.7** en desarrollo y pruebas, con las bases `campusops_dev` y `campusops_test`.
-- **Build scripts:** `sharp` y `unrs-resolver` siguen bloqueados; `pnpm build` y las pruebas funcionan sin ellos.
+- **Build scripts:** solo `@prisma/engines` está aprobado, porque descarga el binario que ejecuta las migraciones. `prisma`, `esbuild`, `sharp` y `unrs-resolver` siguen bloqueados; todo funciona sin ellos.
 - **Dependencias auxiliares aprobadas en la Fase 0:** `jsdom`, `@vitejs/plugin-react`, `eslint-config-prettier`, `prettier-plugin-tailwindcss` y lo que agrega shadcn/ui (preset `base-nova`). `shadcn` va en `devDependencies`.
+- **Dependencias aprobadas en la Fase 1:** `@prisma/client`, `@prisma/adapter-pg`, `pg`, `nanoid`, `prisma`, `@types/pg`, `dotenv` y `tsx`. Las tres de Prisma van fijadas a la misma versión exacta.
+- **Prisma 7:** la configuración vive en `prisma7.config.ts`, el cliente se genera en `src/generated/prisma` (no se versiona) y `postinstall` lo regenera.
+- **`ReportStatus` sin `CLOSED`:** `RESOLVED` es el estado final.
+- **Prioridad del reporte:** `LOW | MEDIUM | HIGH`, por defecto `MEDIUM`. La define el ADMIN, no quien reporta.
+- **STAFF (Administrativo) es un rol propio** de solo lectura. El seed crea 1 ADMIN, 2 técnicos y 1 STAFF.
+- **Varios reportes abiertos por activo:** se permiten. En la Fase 6 se avisa a quien reporta que ya hay uno abierto, sin bloquearlo.
+- **Tipo de falla:** opcional, con las cinco opciones de `FaultType`.
 
 ## Decisiones abiertas
 
 Preguntar al usuario cuando se llegue a ellas (la propuesta actual está en este archivo):
 
 1. ¿Qué datos del equipo ve el público? (propuesta: tipo, marca, modelo, ubicación, especificaciones y estado; **no** serie ni inventario).
-2. ¿ADMINISTRATIVO es un rol distinto de solo lectura, o basta con ADMIN y TECNICO?
-3. ¿Ciclo de vida del reporte: ¿incluir un estado `CLOSED` separado de `RESOLVED`?
-4. ¿Se permiten varios reportes abiertos para el mismo activo? (propuesta: sí, avisando a quien reporta que ya hay uno abierto).
-5. ¿Quien reporta recibe seguimiento por correo?
-6. ¿Foto en el reporte? (propuesta: después del MVP).
-7. ¿Se necesita prioridad en el reporte y quién la fija?
-8. Dominio/URL estable de despliegue (los QR dependen de él).
+2. ¿Quien reporta recibe seguimiento por correo?
+3. ¿Foto en el reporte? (propuesta: después del MVP).
+4. Dominio/URL estable de despliegue (los QR dependen de él).
 
 ## Cómo trabajar en este proyecto
 

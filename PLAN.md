@@ -65,7 +65,7 @@ Si vas justo de tiempo: fusiona Fase 0 + 1 y Fase 9 + 10, y aplica el recorte de
 
 ### Estado de las fases
 
-- [ ] Fase 0  - [ ] Fase 1  - [ ] Fase 2  - [ ] Fase 3  - [ ] Fase 4  - [ ] Fase 5  - [ ] Fase 6
+- [x] Fase 0  - [x] Fase 1  - [ ] Fase 2  - [ ] Fase 3  - [ ] Fase 4  - [ ] Fase 5  - [ ] Fase 6
 - [ ] Fase 7  - [ ] Fase 8  - [ ] Fase 9  - [ ] Fase 10  - [ ] Fase 11  - [ ] Fase 12
 
 ## 4. Estrategia de pruebas
@@ -96,7 +96,7 @@ Reglas:
 - [x] `pnpm-workspace.yaml` con la configuración de seguridad de `CLAUDE.md` (scripts de build bloqueados salvo lista aprobada, `strictDepBuilds`, `minimumReleaseAge`, `blockExoticSubdeps`). Aprobar solo lo necesario con `pnpm approve-builds`.
 - [x] shadcn/ui, Prettier, `.gitignore`, `.env.example`, `.nvmrc`.
 - [x] Vitest + Testing Library. Scripts: `dev`, `build`, `lint`, `typecheck`, `test`, `test:watch`, `check`.
-- [ ] `docker-compose.yml` con PostgreSQL (BD de desarrollo y de pruebas). *Archivo creado y validado; falta comprobar que arranca.*
+- [x] `docker-compose.yml` con PostgreSQL (BD de desarrollo y de pruebas).
 - [x] Página de inicio provisional y ruta `GET /api/health`.
 - [x] Si no existe, inicializar el repositorio Git (`git init`) y dejar el `.gitignore` listo. **El primer commit lo hace el usuario.**
 
@@ -113,14 +113,14 @@ Reglas:
 **Depende de:** Fase 0.
 
 **Tareas**
-- [ ] Instalar y configurar Prisma siguiendo la guía vigente para Next.js + PostgreSQL (la v7 cambió la configuración; revisar la documentación antes de escribir código).
-- [ ] `schema.prisma`: `User` (con los campos que exige la librería de auth y `role`), `Location`, `Asset` (`publicCode` único), `Report` (`folio` autoincremental, `reporterIpHash`, contacto opcional), `ReportEvent`, `Notification`; enums de estados y roles (nombres en inglés).
-- [ ] Primera migración.
-- [ ] `lib/public-code.ts`: generador de `publicCode` (aleatorio, no secuencial, ≥ 10 caracteres).
-- [ ] `lib/labels.ts`: etiquetas en español para estados y roles.
-- [ ] Seed idempotente: 4 usuarios (sin credenciales aún), 3–4 ubicaciones, ~6 activos de ejemplo.
-- [ ] Scripts: `db:migrate`, `db:seed`, `db:reset`, `db:studio`.
-- [ ] Configuración de pruebas de integración: BD de pruebas, migración automática antes de la suite y helper `resetDb()`.
+- [x] Instalar y configurar Prisma siguiendo la guía vigente para Next.js + PostgreSQL (la v7 cambió la configuración; revisar la documentación antes de escribir código).
+- [x] `schema.prisma`: `User` (con los campos que exige la librería de auth y `role`), `Location`, `Asset` (`publicCode` único), `Report` (`folio` autoincremental, `reporterIpHash`, contacto opcional, prioridad `LOW | MEDIUM | HIGH`), `ReportEvent`, `Notification`; enums de estados y roles (nombres en inglés), sin `CLOSED`.
+- [x] Primera migración.
+- [x] `lib/public-code.ts`: generador de `publicCode` (aleatorio, no secuencial, ≥ 10 caracteres).
+- [x] `lib/labels.ts`: etiquetas en español para estados y roles.
+- [x] Seed idempotente: 4 usuarios (sin credenciales aún), 3–4 ubicaciones, ~6 activos de ejemplo.
+- [x] Scripts: `db:migrate`, `db:seed`, `db:reset`, `db:studio`.
+- [x] Configuración de pruebas de integración: BD de pruebas, migración automática antes de la suite y helper `resetDb()`.
 
 **Pruebas**
 - Unitarias: `generatePublicCode()` (longitud, alfabeto, sin colisiones en 10 000 muestras); `labels` cubre todos los valores de cada enum.
@@ -224,7 +224,7 @@ Reglas:
 - [ ] Server Action `submitReport` con validación Zod.
 - [ ] Anti-abuso: campo trampa (honeypot) y límite de reportes por IP y por activo en una ventana de tiempo (guardar solo el hash de la IP con un secreto de entorno).
 - [ ] Pantalla de confirmación con el folio.
-- [ ] Decisión abierta: ¿avisar cuando el activo ya tiene un reporte abierto? (propuesta: sí, sin bloquear).
+- [ ] Si el activo ya tiene un reporte abierto, avisar a quien reporta sin bloquearlo.
 - [ ] Opcional: primer despliegue de vista previa para probar con datos móviles.
 
 **Pruebas**
@@ -243,7 +243,7 @@ Reglas:
 **Tareas**
 - [ ] `/reportes`: lista con filtros por estado, activo y técnico; paginación simple. ADMIN ve todos, STAFF ve todos en solo lectura.
 - [ ] `/reportes/[id]`: detalle con línea de tiempo de eventos.
-- [ ] Asignar técnico (solo técnicos activos) y rechazar con motivo (solo ADMIN).
+- [ ] Asignar técnico (solo técnicos activos), definir la prioridad y rechazar con motivo (solo ADMIN).
 - [ ] Navegación del área staff según el rol.
 
 **Pruebas**
@@ -392,12 +392,8 @@ Confirmar con el usuario (ver también "Decisiones abiertas" en `CLAUDE.md`):
 
 1. ¿Horas reales disponibles por día y fecha exacta de entrega?
 2. ¿Qué datos del equipo debe ver el público? ¿Serie e inventario sí o no? (Afecta Fase 4.)
-3. ¿STAFF como rol de solo lectura distinto, o se elimina? (Fases 2, 7 y 8.)
-4. ¿`RESOLVED` es final o se añade `CLOSED`? (Fase 5.)
-5. ¿Varios reportes abiertos por activo? ¿Se avisa a quien reporta? (Fase 6.)
-6. ¿Quien reporta recibe seguimiento por correo? (Fases 6 y 10.)
-7. ¿Prioridad en el reporte? ¿Quién la define? (Fases 1 y 7.)
-8. ¿Dónde se desplegará la demo y con qué dominio? (Fase 12.)
+3. ¿Quien reporta recibe seguimiento por correo? (Fases 6 y 10.)
+4. ¿Dónde se desplegará la demo y con qué dominio? (Fase 12.)
 
 ## 10. Backlog posterior al MVP
 
