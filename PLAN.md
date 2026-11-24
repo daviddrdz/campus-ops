@@ -20,7 +20,7 @@ Cada fase está pensada para **una sesión de Claude Code**: tiene alcance acota
 2. **Antes de codificar**, comprueba que la fase anterior esté cerrada: `pnpm check` en verde. Si no lo está, arréglalo primero.
 3. Escribe las pruebas junto con el código (en la lógica de dominio, antes del código).
 4. **Una fase termina solo cuando** `pnpm check` (= lint + typecheck + test) está en verde **y** se cumple su "Listo cuando", incluida la prueba manual.
-5. Al cerrar: marca las casillas de esta fase, actualiza la sección "Estado actual" de `CLAUDE.md` y anota cualquier decisión nueva. **No hagas commits**: los hace el usuario; sugiere un mensaje de commit y deja los cambios sin commitear.
+5. Al cerrar: marca las casillas de esta fase, actualiza la sección "Estado actual" de `CLAUDE.md` y anota cualquier decisión nueva. **No hagas commits**: los hace el usuario. Deja los cambios sin commitear, revisa `git status` y propón qué archivos van en cada commit, con su mensaje en inglés (ver "Convenciones" en `CLAUDE.md`).
 6. No empieces la siguiente fase en la misma sesión (a menos que lo pidas): mantiene el contexto pequeño y el trabajo revisable.
 7. Solo **pnpm**. Sin `npm`/`yarn`, sin `--force`, sin permitir todos los build scripts. Dependencia nueva = preguntar primero (ver `CLAUDE.md`, "Entorno seguro con pnpm").
 8. Si una decisión abierta bloquea la fase, haz una pregunta concreta con opciones y una recomendación.

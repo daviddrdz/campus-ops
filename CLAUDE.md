@@ -158,13 +158,20 @@ pnpm dlx <herramienta>           # herramientas puntuales (en lugar de npx)
 
 ## Convenciones
 
-- **Idioma:** código, nombres de variables, tablas y enums en inglés; textos de la interfaz, mensajes de error al usuario, documentación y commits en español (México).
+- **Idioma:** código, nombres de variables, tablas y enums en inglés; textos de la interfaz, mensajes de error al usuario y documentación en español (México). **Los mensajes de commit van en inglés.**
 - TypeScript en modo estricto; sin `any` salvo justificación en un comentario.
 - La lógica de negocio va en `src/server/`, no en componentes. Los componentes solo muestran y llaman acciones.
 - Mutaciones con Server Actions (o Route Handlers); toda entrada se valida con Zod en el servidor.
 - **Diseño mobile-first:** el flujo de reporte se usa desde el celular al lado del equipo. Reportar debe tomar segundos: solo la descripción es obligatoria.
+- **Interfaz:** antes de crear o rediseñar una pantalla, lee y aplica `.agents/skills/frontend-design/SKILL.md`. Si choca con este archivo, gana este archivo (mobile-first, Tailwind + shadcn/ui, textos en español, sin dependencias nuevas sin preguntar). Mantén una sola identidad visual en `src/app/globals.css`; no la reinventes en cada fase.
 - Sin dependencias pesadas nuevas sin preguntar. Sin comentarios que repitan el código.
-- **Claude no hace commits, `git push`, ramas ni PRs: los commits los hace siempre el usuario.** Al cerrar una fase deja los cambios sin commitear y sugiere un mensaje de commit en español (descriptivo, un cambio lógico). Sí puede usar `git status` y `git diff` para revisar.
+- **Claude no hace commits, `git push`, ramas ni PRs: los commits los hace siempre el usuario.** Al cerrar una fase deja los cambios sin commitear. Sí puede usar `git status` y `git diff` para revisar.
+- **Al cerrar cada fase, Claude propone cómo dividir los commits** para evitar uno gigante:
+  1. Corre `git status --short --untracked-files=all` y revisa qué cambió.
+  2. Agrupa los archivos en commits pequeños, con un cambio lógico cada uno. Cada archivo va en un solo commit y ninguno queda fuera.
+  3. Ordena los commits para que cada uno funcione por sí solo, y lo comprueba en una copia temporal con `pnpm check` y `pnpm build`, sin tocar el repositorio.
+  4. Le da al usuario, por cada commit, un bloque listo para copiar con `git add <archivos>` y `git commit -m "<mensaje>"`. Las rutas con `[]` o `()` van entre comillas para que funcionen en zsh.
+  5. Los mensajes van en inglés, con formato Conventional Commits (por ejemplo, `feat(auth): add login page`).
 - **Pruebas:** la lógica de dominio (permisos, transiciones, estado derivado) se prueba con TDD o junto con el código; los servicios se prueban contra la BD de pruebas (`DATABASE_URL_TEST`), nunca la de desarrollo. La prueba de "no filtración" de la ficha pública debe seguir en verde en todas las fases.
 - Antes de dar algo por terminado: `pnpm check` en verde y la prueba manual de la fase hecha de verdad en el navegador (idealmente desde un celular).
 
@@ -213,7 +220,7 @@ Preguntar al usuario cuando se llegue a ellas (la propuesta actual está en este
 ## Cómo trabajar en este proyecto
 
 - El desarrollo avanza **por fases de `PLAN.md`, una fase por sesión**. Empieza leyendo `CLAUDE.md` y `PLAN.md`, trabaja solo la fase indicada y verifica que `pnpm check` pase antes de empezar.
-- Al cerrar una fase: `pnpm check` en verde, "Listo cuando" cumplido y probado a mano, casillas marcadas en `PLAN.md`, y "Estado actual" de este archivo actualizado. No adelantes la fase siguiente salvo que el usuario lo pida.
+- Al cerrar una fase: `pnpm check` en verde, "Listo cuando" cumplido y probado a mano, casillas marcadas en `PLAN.md`, "Estado actual" de este archivo actualizado y la propuesta de commits entregada (ver "Convenciones"). No adelantes la fase siguiente salvo que el usuario lo pida.
 - Si el plan se atrasa, recorta según la sección "Recorte de alcance" de `PLAN.md`; **nunca** recortar el flujo central: QR → ficha → reporte → asignación → cambio de estado → historial.
 - Ante una duda de producto, haz una pregunta concreta con opciones y una recomendación; no inventes reglas de negocio.
 - Registra en este archivo cualquier decisión nueva y mueve su punto de "Decisiones abiertas" a la sección correspondiente.
