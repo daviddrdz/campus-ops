@@ -26,6 +26,10 @@ import {
 import { assertCan, AuthorizationError } from "@/server/auth/guards";
 import type { Viewer } from "@/server/auth/permissions";
 import { db } from "@/server/db";
+import {
+  notify,
+  type ReportNotificationEvent,
+} from "@/server/notifications/notify";
 import { recomputeAssetStatus } from "./asset-status";
 import { assertWithinAnonymousLimits, lockReporterIp } from "./rate-limit";
 import {
@@ -80,6 +84,16 @@ function assertCanAttempt(
 ): asserts viewer is Actor {
   if (!viewer || !operations.some((op) => canAttempt(viewer, op))) {
     throw new AuthorizationError();
+  }
+}
+
+// Los avisos se crean después de confirmar el cambio: si fallan, el reporte ya
+// quedó guardado y el error solo se registra.
+async function notifyAfterCommit(event: ReportNotificationEvent) {
+  try {
+    await notify(event);
+  } catch (error) {
+    console.error(`No se pudieron crear los avisos (${event.type}).`, error);
   }
 }
 
@@ -234,6 +248,12 @@ export async function createReport(
     return { id: created.id, folio: created.folio };
   });
 
+  await notifyAfterCommit({
+    type: "REPORT_CREATED",
+    reportId: report.id,
+    actorId: viewer?.isActive ? viewer.id : null,
+  });
+
   return { ok: true, data: report };
 }
 
@@ -279,6 +299,13 @@ export async function assignReport(
     },
   );
 
+  await notifyAfterCommit({
+    type: "REPORT_ASSIGNED",
+    reportId: change.id,
+    actorId: viewer.id,
+    assigneeId: technicianId,
+  });
+
   return { ok: true, data: change };
 }
 
@@ -307,6 +334,14 @@ export async function changeReportStatus(
       event: { type: "STATUS_CHANGED", message: note },
     }),
   );
+
+  if (resolving) {
+    await notifyAfterCommit({
+      type: "REPORT_RESOLVED",
+      reportId: change.id,
+      actorId: viewer.id,
+    });
+  }
 
   return { ok: true, data: change };
 }
