@@ -28,6 +28,7 @@ const operationVerbs: Record<ReportOperation, string> = {
   resolve: "resolver",
   reject: "rechazar",
   prioritize: "cambiar la prioridad de",
+  comment: "agregar notas a",
 };
 
 export class InvalidTransitionError extends ReportDomainError {

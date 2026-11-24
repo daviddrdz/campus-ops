@@ -55,7 +55,7 @@ export const reportEventTypeLabels: Record<ReportEventType, string> = {
   CREATED: "Reporte creado",
   ASSIGNED: "Técnico asignado",
   STATUS_CHANGED: "Cambio de estado",
-  COMMENT: "Comentario",
+  COMMENT: "Nota",
   PRIORITY_CHANGED: "Cambio de prioridad",
 };
 

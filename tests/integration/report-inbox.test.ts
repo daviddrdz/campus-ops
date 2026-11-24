@@ -315,13 +315,17 @@ describe("bandeja y detalle de reportes", () => {
     });
 
     it("da las operaciones que el usuario puede hacer", async () => {
-      const { reported, resolved } = await seedReports();
+      const { reported, inProgress, resolved } = await seedReports();
 
       expect((await getReportDetail(admin, reported))?.operations).toEqual([
         "assign",
         "reject",
         "prioritize",
+        "comment",
       ]);
+      expect(
+        (await getReportDetail(otherTech, inProgress))?.operations,
+      ).toEqual(["resolve", "comment"]);
       expect((await getReportDetail(staff, reported))?.operations).toEqual([]);
       expect((await getReportDetail(admin, resolved))?.operations).toEqual([]);
     });

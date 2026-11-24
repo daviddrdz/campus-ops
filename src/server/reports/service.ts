@@ -12,11 +12,13 @@ import { recordIdSchema } from "@/lib/validators/text";
 import {
   assignReportSchema,
   rejectReportSchema,
+  reportCommentSchema,
   reportInputSchema,
   reportPrioritySchema,
   statusChangeSchema,
   type AssignReportField,
   type RejectReportField,
+  type ReportCommentField,
   type ReportField,
   type ReportPriorityField,
   type StatusChangeField,
@@ -363,6 +365,29 @@ export async function setReportPriority(
       };
     },
   );
+
+  return { ok: true, data: change };
+}
+
+// Nota en la bitácora sin cambiar el estado: avances, piezas pendientes, etc.
+export async function addReportComment(
+  viewer: Viewer,
+  rawReportId: unknown,
+  rawInput: unknown,
+): Promise<ServiceResult<ReportChange, ReportCommentField>> {
+  assertCanAttempt(viewer, "comment");
+  const reportId = parseReportId(rawReportId);
+  const input = reportCommentSchema.safeParse(rawInput);
+
+  if (!input.success) {
+    return { ok: false, fieldErrors: fieldErrorsFrom(input.error) };
+  }
+
+  const { message } = input.data;
+
+  const change = await applyOperation(viewer, reportId, "comment", () => ({
+    event: { type: "COMMENT", message },
+  }));
 
   return { ok: true, data: change };
 }

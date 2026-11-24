@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   ACTIONS,
   can,
+  canViewAllReports,
   type Action,
   type Viewer,
 } from "@/server/auth/permissions";
@@ -46,6 +47,7 @@ const resourceMatrix: [
 ][] = [
   ["report:view", false, true, true, true, false, false, false],
   ["report:changeStatus", false, false, true, true, false, false, false],
+  ["report:comment", false, false, true, true, false, false, false],
 ];
 
 describe("can", () => {
@@ -119,6 +121,18 @@ describe("can", () => {
       });
     },
   );
+
+  describe("canViewAllReports", () => {
+    it.each<[string, Viewer, boolean]>([
+      ["anónimo", null, false],
+      ["administrativo", staff, true],
+      ["admin", admin, true],
+      ["técnico", technician, false],
+      ["admin inactivo", { id: "x", role: "ADMIN", isActive: false }, false],
+    ])("%s", (_name, viewer, expected) => {
+      expect(canViewAllReports(viewer)).toBe(expected);
+    });
+  });
 
   describe("usuario inactivo", () => {
     it.each([

@@ -63,6 +63,10 @@ export const rejectReportSchema = z.object({
   reason: requiredText("el motivo del rechazo", REPORT_LIMITS.note),
 });
 
+export const reportCommentSchema = z.object({
+  message: requiredText("la nota", REPORT_LIMITS.note),
+});
+
 export const reportPrioritySchema = z.object({
   priority: z.enum(ReportPriority, { error: "Elige una prioridad." }),
 });
@@ -115,3 +119,4 @@ export type AssignReportField = keyof z.input<typeof assignReportSchema>;
 export type StatusChangeField = keyof z.input<typeof statusChangeSchema>;
 export type RejectReportField = keyof z.input<typeof rejectReportSchema>;
 export type ReportPriorityField = keyof z.input<typeof reportPrioritySchema>;
+export type ReportCommentField = keyof z.input<typeof reportCommentSchema>;

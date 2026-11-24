@@ -41,6 +41,7 @@ const allowedViewers: Record<ReportOperation, string[]> = {
   prioritize: ["admin"],
   start: ["admin", "técnico con su reporte"],
   resolve: ["admin", "técnico con su reporte"],
+  comment: ["admin", "técnico con su reporte"],
 };
 
 // Desde qué estado es válida cada operación y a qué estado lleva.
@@ -61,6 +62,11 @@ const validTransitions: Record<
     IN_PROGRESS: "REJECTED",
   },
   prioritize: {
+    REPORTED: "REPORTED",
+    ASSIGNED: "ASSIGNED",
+    IN_PROGRESS: "IN_PROGRESS",
+  },
+  comment: {
     REPORTED: "REPORTED",
     ASSIGNED: "ASSIGNED",
     IN_PROGRESS: "IN_PROGRESS",
@@ -115,34 +121,34 @@ describe("transiciones de reportes", () => {
   });
 
   describe("allowedOperations", () => {
-    it("el admin puede asignar, rechazar o priorizar un reporte nuevo", () => {
+    it("el admin puede asignar, rechazar, priorizar o anotar un reporte nuevo", () => {
       expect(
         allowedOperations(admin, { status: "REPORTED", assignedToId: null }),
-      ).toEqual(["assign", "reject", "prioritize"]);
+      ).toEqual(["assign", "reject", "prioritize", "comment"]);
     });
 
-    it("el admin puede reasignar, iniciar, rechazar o priorizar uno asignado", () => {
+    it("el admin puede reasignar, iniciar, rechazar, priorizar o anotar uno asignado", () => {
       expect(
         allowedOperations(admin, { status: "ASSIGNED", assignedToId: "tech" }),
-      ).toEqual(["assign", "start", "reject", "prioritize"]);
+      ).toEqual(["assign", "start", "reject", "prioritize", "comment"]);
     });
 
-    it("el técnico solo inicia su reporte asignado", () => {
+    it("el técnico inicia o anota su reporte asignado", () => {
       expect(
         allowedOperations(technician, {
           status: "ASSIGNED",
           assignedToId: "tech",
         }),
-      ).toEqual(["start"]);
+      ).toEqual(["start", "comment"]);
     });
 
-    it("el técnico solo resuelve su reporte en proceso", () => {
+    it("el técnico resuelve o anota su reporte en proceso", () => {
       expect(
         allowedOperations(technician, {
           status: "IN_PROGRESS",
           assignedToId: "tech",
         }),
-      ).toEqual(["resolve"]);
+      ).toEqual(["resolve", "comment"]);
     });
 
     it("el técnico no tiene operaciones sobre un reporte ajeno", () => {
@@ -168,8 +174,12 @@ describe("transiciones de reportes", () => {
       ["anónimo", null, []],
       ["administrativo", staff, []],
       ["admin inactivo", inactiveAdmin, []],
-      ["técnico", technician, ["start", "resolve"]],
-      ["admin", admin, ["assign", "start", "resolve", "reject", "prioritize"]],
+      ["técnico", technician, ["start", "resolve", "comment"]],
+      [
+        "admin",
+        admin,
+        ["assign", "start", "resolve", "reject", "prioritize", "comment"],
+      ],
     ] as const)("%s", (_name, viewer, expected) => {
       expect(REPORT_OPERATIONS.filter((op) => canAttempt(viewer, op))).toEqual(
         expected,

@@ -10,6 +10,7 @@ export const ACTIONS = [
   "report:reject",
   "report:setPriority",
   "report:changeStatus",
+  "report:comment",
   "asset:manage",
   "user:manage",
 ] as const;
@@ -80,6 +81,13 @@ const permissions: Record<
     TECHNICIAN: "assigned",
     ADMIN: true,
   },
+  // Notas sueltas en la bitácora: quien atiende el reporte (o el ADMIN).
+  "report:comment": {
+    anonymous: false,
+    STAFF: false,
+    TECHNICIAN: "assigned",
+    ADMIN: true,
+  },
   "asset:manage": {
     anonymous: false,
     STAFF: false,
@@ -112,4 +120,9 @@ export function can(
   }
 
   return roleRule;
+}
+
+// El técnico solo ve los reportes que tiene asignados; los demás roles con bandeja, todos.
+export function canViewAllReports(viewer: Viewer): boolean {
+  return can(viewer, "report:view", { assignedToId: null });
 }

@@ -8,15 +8,19 @@ import {
   HONEYPOT_FIELD,
   type AssignReportField,
   type RejectReportField,
+  type ReportCommentField,
   type ReportField,
   type ReportPriorityField,
+  type StatusChangeField,
 } from "@/lib/validators/reports";
 import { AuthorizationError } from "@/server/auth/guards";
 import { getSession, requireUser } from "@/server/auth/session";
 import { getClientIp, hashIp } from "@/server/client-ip";
 import { ReportDomainError } from "./errors";
 import {
+  addReportComment,
   assignReport,
+  changeReportStatus,
   createReport,
   rejectReport,
   setReportPriority,
@@ -68,10 +72,11 @@ export async function submitReportAction(
 
 export type ReportChangeState<Field extends string> = FormState<Field>;
 
-export type ReportChangeNotice = "asignado" | "prioridad" | "rechazado";
+export type ReportChangeNotice =
+  "asignado" | "prioridad" | "rechazado" | "en-proceso" | "resuelto" | "nota";
 
-// Cambios del ADMIN desde el detalle del reporte. El servicio revisa permisos;
-// aquí solo se traducen los errores y se vuelve al detalle con un aviso.
+// Cambios desde el detalle del reporte (ADMIN o técnico asignado). El servicio
+// revisa permisos; aquí solo se traducen los errores y se vuelve al detalle con un aviso.
 async function runReportChange<Field extends string>(
   reportId: string,
   notice: ReportChangeNotice,
@@ -99,6 +104,7 @@ async function runReportChange<Field extends string>(
   }
 
   revalidatePath("/reportes");
+  revalidatePath("/mis-reportes");
   revalidatePath(`/reportes/${reportId}`);
   revalidatePath("/a/[code]", "page");
   redirect(`/reportes/${reportId}?aviso=${notice}`);
@@ -131,5 +137,42 @@ export async function rejectReportAction(
 ): Promise<ReportChangeState<RejectReportField>> {
   return runReportChange(reportId, "rechazado", (viewer) =>
     rejectReport(viewer, reportId, Object.fromEntries(formData)),
+  );
+}
+
+// El estado destino lo fija la acción, no el formulario.
+export async function startReportAction(
+  reportId: string,
+  _previous: ReportChangeState<StatusChangeField>,
+  formData: FormData,
+): Promise<ReportChangeState<StatusChangeField>> {
+  return runReportChange(reportId, "en-proceso", (viewer) =>
+    changeReportStatus(viewer, reportId, {
+      note: formData.get("note"),
+      status: "IN_PROGRESS",
+    }),
+  );
+}
+
+export async function resolveReportAction(
+  reportId: string,
+  _previous: ReportChangeState<StatusChangeField>,
+  formData: FormData,
+): Promise<ReportChangeState<StatusChangeField>> {
+  return runReportChange(reportId, "resuelto", (viewer) =>
+    changeReportStatus(viewer, reportId, {
+      note: formData.get("note"),
+      status: "RESOLVED",
+    }),
+  );
+}
+
+export async function commentReportAction(
+  reportId: string,
+  _previous: ReportChangeState<ReportCommentField>,
+  formData: FormData,
+): Promise<ReportChangeState<ReportCommentField>> {
+  return runReportChange(reportId, "nota", (viewer) =>
+    addReportComment(viewer, reportId, Object.fromEntries(formData)),
   );
 }

@@ -23,6 +23,7 @@ export const REPORT_OPERATIONS = [
   "resolve",
   "reject",
   "prioritize",
+  "comment",
 ] as const;
 
 export type ReportOperation = (typeof REPORT_OPERATIONS)[number];
@@ -70,6 +71,15 @@ const rules: Record<ReportOperation, OperationRule> = {
   // La prioridad no mueve el estado; en un reporte cerrado ya no tiene efecto.
   prioritize: {
     action: "report:setPriority",
+    transitions: {
+      REPORTED: "REPORTED",
+      ASSIGNED: "ASSIGNED",
+      IN_PROGRESS: "IN_PROGRESS",
+    },
+  },
+  // Una nota no mueve el estado; un reporte cerrado ya no admite notas.
+  comment: {
+    action: "report:comment",
     transitions: {
       REPORTED: "REPORTED",
       ASSIGNED: "ASSIGNED",

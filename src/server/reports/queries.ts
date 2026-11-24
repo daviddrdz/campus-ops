@@ -6,7 +6,7 @@ import {
 } from "@/lib/validators/reports";
 import { buildAssetSearchFilter } from "@/server/assets/service";
 import { assertCan, AuthorizationError } from "@/server/auth/guards";
-import { can, type Viewer } from "@/server/auth/permissions";
+import { can, canViewAllReports, type Viewer } from "@/server/auth/permissions";
 import { db } from "@/server/db";
 import { allowedOperations, OPEN_REPORT_STATUSES } from "./transitions";
 
@@ -20,11 +20,6 @@ function assertCanListInbox(
   if (!viewer) {
     throw new AuthorizationError();
   }
-}
-
-// Quien no puede ver cualquier reporte (el técnico) solo ve los que tiene asignados.
-function seesAllReports(viewer: Viewer) {
-  return can(viewer, "report:view", { assignedToId: null });
 }
 
 function buildInboxFilter(
@@ -43,7 +38,7 @@ function buildInboxFilter(
     where.asset = buildAssetSearchFilter(filters.assetQuery);
   }
 
-  if (!seesAllReports(viewer)) {
+  if (!canViewAllReports(viewer)) {
     where.assignedToId = viewer.id;
   } else if (filters.technician === "none") {
     where.assignedToId = null;
@@ -92,11 +87,73 @@ export async function listReports(viewer: Viewer, rawFilters?: unknown) {
     page,
     pageCount,
     filters: { ...filters, page },
-    scope: seesAllReports(viewer) ? ("all" as const) : ("assigned" as const),
+    scope: canViewAllReports(viewer) ? ("all" as const) : ("assigned" as const),
   };
 }
 
 export type ReportInbox = Awaited<ReturnType<typeof listReports>>;
+
+export const MY_RECENT_CLOSED_LIMIT = 10;
+
+const myReportSelect = {
+  id: true,
+  folio: true,
+  status: true,
+  priority: true,
+  description: true,
+  createdAt: true,
+  assignedAt: true,
+  resolvedAt: true,
+  asset: {
+    select: {
+      name: true,
+      location: { select: { building: true, room: true } },
+    },
+  },
+} as const;
+
+// Pantalla de trabajo del técnico: lo abierto y lo que cerró hace poco.
+// Siempre se limita a los reportes asignados a quien consulta.
+export async function listMyReports(viewer: Viewer) {
+  assertCanListInbox(viewer);
+
+  const [open, recentlyClosed] = await Promise.all([
+    db.report.findMany({
+      where: {
+        assignedToId: viewer.id,
+        status: { in: [...OPEN_REPORT_STATUSES] },
+      },
+      orderBy: [{ assignedAt: "asc" }, { folio: "asc" }],
+      select: myReportSelect,
+    }),
+    db.report.findMany({
+      where: {
+        assignedToId: viewer.id,
+        status: { in: ["RESOLVED", "REJECTED"] },
+      },
+      orderBy: [{ updatedAt: "desc" }, { folio: "desc" }],
+      take: MY_RECENT_CLOSED_LIMIT,
+      select: myReportSelect,
+    }),
+  ]);
+
+  // Primero lo que ya está en proceso; dentro de cada grupo, prioridad alta arriba.
+  const byPriority = (a: (typeof open)[number], b: (typeof open)[number]) =>
+    Number(b.priority === "HIGH") - Number(a.priority === "HIGH");
+
+  return {
+    inProgress: open
+      .filter((report) => report.status === "IN_PROGRESS")
+      .toSorted(byPriority),
+    assigned: open
+      .filter((report) => report.status !== "IN_PROGRESS")
+      .toSorted(byPriority),
+    recentlyClosed,
+  };
+}
+
+export type MyReports = Awaited<ReturnType<typeof listMyReports>>;
+export type MyReport = MyReports["assigned"][number];
 
 // Devuelve null tanto si no existe como si el usuario no puede verlo:
 // un técnico no averigua si existe un reporte ajeno.
