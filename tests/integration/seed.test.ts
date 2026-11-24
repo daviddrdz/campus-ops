@@ -15,7 +15,9 @@ async function getAssetCodes() {
   return assets;
 }
 
-describe("seed", () => {
+// Cada corrida del seed hashea 4 contraseñas (scrypt); con toda la suite en
+// paralelo, correrlo dos veces puede pasar de los 5 s por defecto.
+describe("seed", { timeout: 20_000 }, () => {
   beforeEach(resetDb);
   afterAll(() => db.$disconnect());
 
