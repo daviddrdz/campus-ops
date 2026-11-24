@@ -1,5 +1,8 @@
 import { z } from "zod";
 import { AssetType } from "@/generated/prisma/enums";
+import { optionalText, recordIdSchema, requiredText } from "./text";
+
+export { recordIdSchema };
 
 export const ASSET_LIMITS = {
   inventoryNumber: 50,
@@ -12,25 +15,6 @@ export const ASSET_LIMITS = {
   room: 120,
   search: 100,
 } as const;
-
-function requiredText(label: string, max: number) {
-  return z
-    .string({ error: `Escribe ${label}.` })
-    .trim()
-    .min(1, `Escribe ${label}.`)
-    .max(max, `Usa máximo ${max} caracteres.`);
-}
-
-function optionalText(max: number) {
-  return z
-    .string({ error: "El valor no es válido." })
-    .trim()
-    .max(max, `Usa máximo ${max} caracteres.`)
-    .nullish()
-    .transform((value) => value || null);
-}
-
-export const recordIdSchema = z.string().min(1).max(64);
 
 export const assetInputSchema = z.object({
   inventoryNumber: requiredText(
