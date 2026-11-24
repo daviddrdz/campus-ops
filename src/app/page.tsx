@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 export default function Home() {
   return (
     <main className="flex flex-1 items-center justify-center px-4 py-12">
@@ -10,6 +12,12 @@ export default function Home() {
           Estamos preparando la plataforma para reportar fallas y dar
           seguimiento a cada reparación.
         </p>
+        <Link
+          href="/login"
+          className="inline-block py-2 text-sm font-medium underline underline-offset-4"
+        >
+          Acceso para personal
+        </Link>
       </section>
     </main>
   );
