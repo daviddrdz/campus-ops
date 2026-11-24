@@ -7,9 +7,12 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-  --font-heading: var(--font-sans);
+  --font-sans: var(--font-barlow);
+  --font-heading: var(--font-barlow-condensed);
+  --color-signal: var(--signal);
+  --color-status-operational: var(--status-operational);
+  --color-status-fault: var(--status-fault);
+  --color-status-maintenance: var(--status-maintenance);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -48,25 +51,34 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 }
 
+/* Identidad: la placa metálica de inventario que llevan los equipos del campus. */
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
+  --background: #eef2f3;
+  --foreground: #16252d;
+  --card: #ffffff;
+  --card-foreground: #16252d;
+  --popover: #ffffff;
+  --popover-foreground: #16252d;
+  --primary: #0e5a6f;
+  --primary-foreground: #ffffff;
+  --secondary: #e1e8ea;
+  --secondary-foreground: #16252d;
+  --muted: #e1e8ea;
+  --muted-foreground: #4f626b;
+  --accent: #e1e8ea;
+  --accent-foreground: #16252d;
+  --destructive: #b3261e;
+  --border: #cdd7db;
+  --input: #7f929b;
+  --ring: #0e5a6f;
+  --signal: #f4c20d;
+  --status-operational: #1b7a4b;
+  --status-fault: #a85400;
+  --status-maintenance: #1f5fa8;
+  --plate-top: #e4eaec;
+  --plate-bottom: #cbd5d9;
+  --plate-edge: #93a5ad;
+  --plate-rivet: #62757e;
   --chart-1: oklch(0.87 0 0);
   --chart-2: oklch(0.556 0 0);
   --chart-3: oklch(0.439 0 0);
@@ -126,5 +138,28 @@
   }
   html {
     @apply font-sans;
+  }
+  h1 {
+    @apply font-heading text-3xl leading-tight font-semibold;
+  }
+}
+
+@layer components {
+  .asset-plate {
+    @apply inline-flex items-center rounded-[3px] px-4 py-0.5 font-heading text-base font-semibold tracking-wide whitespace-nowrap tabular-nums;
+    color: var(--foreground);
+    background:
+      radial-gradient(
+        circle at 6px 50%,
+        var(--plate-rivet) 0 1.5px,
+        transparent 2px
+      ),
+      radial-gradient(
+        circle at calc(100% - 6px) 50%,
+        var(--plate-rivet) 0 1.5px,
+        transparent 2px
+      ),
+      linear-gradient(180deg, var(--plate-top), var(--plate-bottom));
+    box-shadow: inset 0 0 0 1px var(--plate-edge);
   }
 }

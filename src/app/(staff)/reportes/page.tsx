@@ -10,7 +10,7 @@ export default async function ReportsPage() {
 
   return (
     <section className="mx-auto max-w-2xl space-y-2">
-      <h1 className="text-xl font-semibold tracking-tight">Reportes</h1>
+      <h1>Reportes</h1>
       <p className="text-sm text-muted-foreground">
         La bandeja de reportes estará disponible pronto.
       </p>
