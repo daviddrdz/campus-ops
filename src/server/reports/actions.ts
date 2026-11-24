@@ -2,13 +2,25 @@
 
 import { revalidatePath } from "next/cache";
 import { headers } from "next/headers";
-import type { FormState } from "@/lib/form-state";
-import { HONEYPOT_FIELD, type ReportField } from "@/lib/validators/reports";
+import { redirect } from "next/navigation";
+import type { FormState, ServiceResult } from "@/lib/form-state";
+import {
+  HONEYPOT_FIELD,
+  type AssignReportField,
+  type RejectReportField,
+  type ReportField,
+  type ReportPriorityField,
+} from "@/lib/validators/reports";
 import { AuthorizationError } from "@/server/auth/guards";
-import { getSession } from "@/server/auth/session";
+import { getSession, requireUser } from "@/server/auth/session";
 import { getClientIp, hashIp } from "@/server/client-ip";
 import { ReportDomainError } from "./errors";
-import { createReport } from "./service";
+import {
+  assignReport,
+  createReport,
+  rejectReport,
+  setReportPriority,
+} from "./service";
 
 export type SubmitReportState = FormState<ReportField, { folio: number }>;
 
@@ -52,4 +64,72 @@ export async function submitReportAction(
 
     throw error;
   }
+}
+
+export type ReportChangeState<Field extends string> = FormState<Field>;
+
+export type ReportChangeNotice = "asignado" | "prioridad" | "rechazado";
+
+// Cambios del ADMIN desde el detalle del reporte. El servicio revisa permisos;
+// aquí solo se traducen los errores y se vuelve al detalle con un aviso.
+async function runReportChange<Field extends string>(
+  reportId: string,
+  notice: ReportChangeNotice,
+  change: (
+    viewer: Awaited<ReturnType<typeof requireUser>>,
+  ) => Promise<ServiceResult<unknown, Field>>,
+): Promise<ReportChangeState<Field>> {
+  const viewer = await requireUser();
+
+  try {
+    const result = await change(viewer);
+
+    if (!result.ok) {
+      return result;
+    }
+  } catch (error) {
+    if (
+      error instanceof ReportDomainError ||
+      error instanceof AuthorizationError
+    ) {
+      return { ok: false, message: error.message };
+    }
+
+    throw error;
+  }
+
+  revalidatePath("/reportes");
+  revalidatePath(`/reportes/${reportId}`);
+  revalidatePath("/a/[code]", "page");
+  redirect(`/reportes/${reportId}?aviso=${notice}`);
+}
+
+export async function assignReportAction(
+  reportId: string,
+  _previous: ReportChangeState<AssignReportField>,
+  formData: FormData,
+): Promise<ReportChangeState<AssignReportField>> {
+  return runReportChange(reportId, "asignado", (viewer) =>
+    assignReport(viewer, reportId, Object.fromEntries(formData)),
+  );
+}
+
+export async function setReportPriorityAction(
+  reportId: string,
+  _previous: ReportChangeState<ReportPriorityField>,
+  formData: FormData,
+): Promise<ReportChangeState<ReportPriorityField>> {
+  return runReportChange(reportId, "prioridad", (viewer) =>
+    setReportPriority(viewer, reportId, Object.fromEntries(formData)),
+  );
+}
+
+export async function rejectReportAction(
+  reportId: string,
+  _previous: ReportChangeState<RejectReportField>,
+  formData: FormData,
+): Promise<ReportChangeState<RejectReportField>> {
+  return runReportChange(reportId, "rechazado", (viewer) =>
+    rejectReport(viewer, reportId, Object.fromEntries(formData)),
+  );
 }

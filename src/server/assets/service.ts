@@ -23,7 +23,7 @@ type AssetResult = ServiceResult<SavedAsset, AssetField>;
 
 const savedAssetSelect = { id: true, publicCode: true } as const;
 
-function buildSearchFilter(query: string): AssetWhereInput {
+export function buildAssetSearchFilter(query: string): AssetWhereInput {
   const terms = query.split(/\s+/).filter(Boolean);
 
   return {
@@ -70,7 +70,7 @@ export async function listAssets(viewer: Viewer, rawQuery?: unknown) {
   const query = assetSearchSchema.parse(rawQuery ?? "");
 
   return db.asset.findMany({
-    where: buildSearchFilter(query),
+    where: buildAssetSearchFilter(query),
     orderBy: { inventoryNumber: "asc" },
     select: {
       id: true,
