@@ -383,17 +383,22 @@ describe("listMyReports", () => {
     ]);
   });
 
-  it(`limita los cerrados a los ${MY_RECENT_CLOSED_LIMIT} más recientes`, async () => {
-    const ids: string[] = [];
-    for (let i = 0; i <= MY_RECENT_CLOSED_LIMIT; i++) {
-      ids.push(await resolved());
-    }
+  // Recorre 11 reportes por todo el flujo: tarda ~4 s y con la suite completa rebasaba los 5 s.
+  it(
+    `limita los cerrados a los ${MY_RECENT_CLOSED_LIMIT} más recientes`,
+    { timeout: 20_000 },
+    async () => {
+      const ids: string[] = [];
+      for (let i = 0; i <= MY_RECENT_CLOSED_LIMIT; i++) {
+        ids.push(await resolved());
+      }
 
-    const { recentlyClosed } = await listMyReports(tech);
+      const { recentlyClosed } = await listMyReports(tech);
 
-    expect(recentlyClosed).toHaveLength(MY_RECENT_CLOSED_LIMIT);
-    expect(recentlyClosed.map((r) => r.id)).not.toContain(ids[0]);
-  });
+      expect(recentlyClosed).toHaveLength(MY_RECENT_CLOSED_LIMIT);
+      expect(recentlyClosed.map((r) => r.id)).not.toContain(ids[0]);
+    },
+  );
 
   it("no expone contacto ni hash de IP de quien reportó", async () => {
     await assigned();
