@@ -168,10 +168,7 @@ export default async function ReportsPage({
           {isFiltered(filters) ? (
             <>
               <p>Ningún reporte coincide con estos filtros.</p>
-              <Link
-                href="/reportes"
-                className="inline-block py-2 text-sm font-medium text-primary underline underline-offset-4"
-              >
+              <Link href="/reportes" className="text-link">
                 Ver los reportes abiertos
               </Link>
             </>

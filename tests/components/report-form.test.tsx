@@ -1,15 +1,20 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
+import { SUBMIT_FAILED_MESSAGE } from "@/components/forms/use-server-form";
 import { ReportForm } from "@/components/reports/report-form";
 import type { SubmitReportState } from "@/server/reports/actions";
 
-function renderForm(result: SubmitReportState) {
+function renderForm(result: SubmitReportState | Error) {
   const action = vi.fn<
     (
       previous: SubmitReportState,
       formData: FormData,
     ) => Promise<SubmitReportState>
-  >(async () => result);
+  >(async () => {
+    if (result instanceof Error) throw result;
+
+    return result;
+  });
 
   render(
     <ReportForm
@@ -82,5 +87,20 @@ describe("ReportForm", () => {
     expect(screen.getByLabelText("¿Qué le pasa al equipo?")).toHaveValue(
       "No enciende",
     );
+  });
+
+  it("sin conexión avisa y conserva lo escrito", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => undefined);
+    renderForm(new TypeError("Failed to fetch"));
+
+    send();
+
+    expect(await screen.findByText(SUBMIT_FAILED_MESSAGE)).toBeInTheDocument();
+    expect(screen.getByLabelText("¿Qué le pasa al equipo?")).toHaveValue(
+      "No enciende",
+    );
+    expect(
+      screen.getByRole("button", { name: "Enviar reporte" }),
+    ).toBeEnabled();
   });
 });

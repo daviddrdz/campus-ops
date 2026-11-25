@@ -53,9 +53,6 @@ const notices: Record<string, string> = {
 const WORK_OPERATIONS: ReportOperation[] = ["start", "resolve", "comment"];
 const ADMIN_OPERATIONS: ReportOperation[] = ["assign", "prioritize", "reject"];
 
-const linkClass =
-  "inline-block py-2 text-sm font-medium text-primary underline underline-offset-4";
-
 function DetailRow({
   label,
   children,
@@ -197,7 +194,7 @@ export default async function ReportPage({
   return (
     <article className="mx-auto max-w-2xl space-y-6">
       <div className="space-y-2">
-        <Link href={backHref} className={linkClass}>
+        <Link href={backHref} className="text-link">
           {backHref === "/reportes"
             ? "Volver a reportes"
             : "Volver a mis reportes"}
@@ -236,13 +233,13 @@ export default async function ReportPage({
           {report.asset.location.building}, {report.asset.location.room}
         </p>
         <div className="flex flex-wrap gap-x-5">
-          <Link href={`/a/${report.asset.publicCode}`} className={linkClass}>
+          <Link href={`/a/${report.asset.publicCode}`} className="text-link">
             Ver ficha del equipo
           </Link>
           {can(viewer, "asset:manage") ? (
             <Link
               href={`/activos/${report.asset.id}/editar`}
-              className={linkClass}
+              className="text-link"
             >
               Editar activo
             </Link>

@@ -5,17 +5,13 @@ export default function Home() {
     <main className="flex flex-1 items-center justify-center px-4 py-12">
       <section className="w-full max-w-md space-y-3 text-center">
         <p className="text-sm font-medium text-muted-foreground">CampusOps</p>
-        <h1 className="text-2xl font-semibold tracking-tight">
-          Mantenimiento de equipos del campus
-        </h1>
+        <h1>¿Un equipo del campus falla?</h1>
         <p className="text-muted-foreground">
-          Estamos preparando la plataforma para reportar fallas y dar
-          seguimiento a cada reparación.
+          Escanea con la cámara de tu celular el código QR de la etiqueta del
+          equipo. Se abre su ficha y desde ahí envías el reporte, sin crear una
+          cuenta.
         </p>
-        <Link
-          href="/login"
-          className="inline-block py-2 text-sm font-medium underline underline-offset-4"
-        >
+        <Link href="/login" className="text-link">
           Acceso para personal
         </Link>
       </section>

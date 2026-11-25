@@ -71,10 +71,7 @@ export default async function AssetsPage({
           {query ? (
             <>
               <p>Ningún activo coincide con “{query}”.</p>
-              <Link
-                href="/activos"
-                className="inline-block py-2 text-sm font-medium text-primary underline underline-offset-4"
-              >
+              <Link href="/activos" className="text-link">
                 Ver todos los activos
               </Link>
             </>

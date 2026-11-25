@@ -7,12 +7,18 @@ import {
   useRef,
   type FormEvent,
 } from "react";
+import { unstable_rethrow } from "next/navigation";
 import type { FormState } from "@/lib/form-state";
 
 export type FormAction<Field extends string, Data = undefined> = (
   previous: FormState<Field, Data>,
   formData: FormData,
 ) => Promise<FormState<Field, Data>>;
+
+// Sin señal (o con un fallo inesperado del servidor) la acción se rechaza: se avisa
+// en el formulario y se conserva lo escrito, en lugar de mostrar la pantalla de error.
+export const SUBMIT_FAILED_MESSAGE =
+  "No pudimos enviar el formulario. Revisa tu conexión e inténtalo de nuevo.";
 
 export function useServerForm<Field extends string, Data = undefined>(
   action: FormAction<Field, Data>,
@@ -24,7 +30,17 @@ export function useServerForm<Field extends string, Data = undefined>(
     FormData
   >(
     async (previous, formData) => {
-      const result = await action(previous, formData);
+      let result: FormState<Field, Data>;
+
+      try {
+        result = await action(previous, formData);
+      } catch (error) {
+        // redirect() y notFound() de Next también llegan como excepción.
+        unstable_rethrow(error);
+        console.error(error);
+
+        return { ok: false, message: SUBMIT_FAILED_MESSAGE };
+      }
 
       if (result.ok) {
         formRef.current?.reset();

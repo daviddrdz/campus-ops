@@ -28,10 +28,7 @@ export default async function AssetQrPage({
   return (
     <section className="mx-auto max-w-xl space-y-5 print:max-w-none">
       <div className="space-y-2 print:hidden">
-        <Link
-          href={`/activos/${asset.id}/editar`}
-          className="inline-block py-2 text-sm font-medium text-primary underline underline-offset-4"
-        >
+        <Link href={`/activos/${asset.id}/editar`} className="text-link">
           Volver al activo
         </Link>
         <h1>Etiqueta QR</h1>

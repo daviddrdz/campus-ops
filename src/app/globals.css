@@ -145,6 +145,11 @@
 }
 
 @layer components {
+  /* Enlace de texto suelto: mismo aspecto, pero con 44 px de alto para tocarlo. */
+  .text-link {
+    @apply inline-flex min-h-11 items-center rounded-sm text-sm font-medium text-primary underline underline-offset-4 outline-none focus-visible:ring-3 focus-visible:ring-ring/50;
+  }
+
   .asset-plate {
     @apply inline-flex items-center rounded-[3px] px-4 py-0.5 font-heading text-base font-semibold tracking-wide whitespace-nowrap tabular-nums;
     color: var(--foreground);
