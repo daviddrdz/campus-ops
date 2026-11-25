@@ -43,8 +43,8 @@ Cada fase está pensada para **una sesión de Claude Code**: tiene alcance acota
 | 7 | Bandeja de reportes y asignación | ADMIN ve la bandeja, asigna técnico o rechaza | M | No |
 | 8 | Técnico y ficha para personal | Flujo completo con tres roles; ficha de staff con historial | L | No |
 | 9 | Notificaciones in-app | Campana con notificaciones correctas por rol | M | No |
-| 10 | Correo electrónico | Correos de reporte nuevo y asignación; fallos no rompen el flujo | S | **Sí (primero)** |
-| 11 | Seguridad, QA y E2E | Matriz de permisos automatizada, auditoría, E2E del flujo principal | L | E2E sí |
+| 10 | ~~Correo electrónico~~ | **Recortada por decisión del usuario:** el MVP solo avisa in-app | S | **Sí (primero)** |
+| 11 | Seguridad y QA | Matriz de permisos automatizada, auditoría de filtración y dependencias, pulido móvil (E2E recortado por decisión del usuario) | L | E2E sí |
 | 12 | Despliegue y demo | App en producción con URL estable; demo ensayada | M | No |
 
 Esfuerzo: S ≈ 1 h · M ≈ 1.5–2 h · L ≈ 2–3 h.
@@ -58,7 +58,7 @@ Esfuerzo: S ≈ 1 h · M ≈ 1.5–2 h · L ≈ 2–3 h.
 | 3 | Fase 4, Fase 5 |
 | 4 | Fase 6, Fase 7 |
 | 5 | Fase 8, Fase 9 |
-| 6 | Fase 10, Fase 11 |
+| 6 | ~~Fase 10~~ (recortada), Fase 11 |
 | 7 | Fase 12 + colchón para imprevistos |
 
 Si vas justo de tiempo: fusiona Fase 0 + 1 y Fase 9 + 10, y aplica el recorte de la sección 6.
@@ -66,7 +66,7 @@ Si vas justo de tiempo: fusiona Fase 0 + 1 y Fase 9 + 10, y aplica el recorte de
 ### Estado de las fases
 
 - [x] Fase 0  - [x] Fase 1  - [x] Fase 2  - [x] Fase 3  - [x] Fase 4  - [x] Fase 5  - [x] Fase 6
-- [x] Fase 7  - [x] Fase 8  - [x] Fase 9  - [ ] Fase 10  - [ ] Fase 11  - [ ] Fase 12
+- [x] Fase 7  - [x] Fase 8  - [x] Fase 9  - ~~Fase 10~~ (recortada por decisión del usuario)  - [x] Fase 11  - [ ] Fase 12
 
 ## 4. Estrategia de pruebas
 
@@ -75,7 +75,7 @@ Si vas justo de tiempo: fusiona Fase 0 + 1 y Fase 9 + 10, y aplica el recorte de
 | Unitarias | Vitest | Funciones puras: permisos `can()`, transiciones, validadores Zod, generador de `publicCode`, armado de URL del QR. |
 | Integración | Vitest + PostgreSQL de prueba | Servicios con base de datos real: crear/asignar/resolver reportes, estado derivado, notificaciones, límites de uso. |
 | Componentes | Vitest + Testing Library | Lo mínimo: formularios clave y estados visibles. |
-| E2E | Playwright | Un solo flujo principal (Fase 11). |
+| E2E | ~~Playwright~~ | **Recortado por decisión del usuario** (Fase 11): no se instala Playwright. El flujo principal se cubre con la matriz de permisos, las pruebas de integración y el recorrido manual. |
 | Manuales | Navegador y **celular real** | Cada fase trae su prueba manual; el QR se prueba siempre con celular. |
 
 Reglas:
@@ -292,7 +292,9 @@ Reglas:
 
 ---
 
-### Fase 10 — Correo electrónico *(recortable)*
+### Fase 10 — Correo electrónico *(recortada por decisión del usuario)*
+> **No se hace en el MVP.** El usuario decidió recortarla al empezar la Fase 11: los avisos son solo in-app (campana, Fase 9). Las casillas quedan sin marcar a propósito; no está completada.
+
 **Objetivo:** correos de reporte nuevo y de asignación.
 **Depende de:** Fase 9.
 
@@ -311,24 +313,24 @@ Reglas:
 
 ---
 
-### Fase 11 — Seguridad, QA y E2E
-**Objetivo:** cerrar huecos y automatizar el recorrido principal.
-**Depende de:** Fases 1–10 (la 10 si no se recortó).
+### Fase 11 — Seguridad y QA *(E2E recortado por decisión del usuario)*
+**Objetivo:** cerrar huecos y revisar el recorrido principal.
+**Depende de:** Fases 1–9 (la 10 se recortó).
 
 **Tareas**
-- [ ] Prueba automatizada de la matriz de permisos: cada ruta y acción × (anónimo, STAFF, TECHNICIAN, ADMIN).
-- [ ] Auditoría de filtración: revisar el HTML y las respuestas reales de la ficha pública (no solo lo que se ve en pantalla).
-- [ ] Revisar límites de reporte, mensajes de error y que no se expongan ids internos ni datos de contacto.
-- [ ] `pnpm audit`; revisar build scripts aprobados y dependencias directas.
-- [ ] Revisión de secretos: `.env` no versionado, `.env.example` completo.
-- [ ] Pulido móvil con celular real: estados vacíos, errores, carga, botones grandes.
-- [ ] Playwright: un E2E del flujo principal contra la BD de pruebas.
+- [x] Prueba automatizada de la matriz de permisos: cada ruta y acción × (anónimo, STAFF, TECHNICIAN, ADMIN). *(`tests/integration/permission-matrix.test.ts`, con sesiones reales de Better Auth; incluye también al técnico no asignado y a una cuenta desactivada con sesión abierta.)*
+- [x] Auditoría de filtración: revisar el HTML y las respuestas reales de la ficha pública (no solo lo que se ve en pantalla). *(HTML, payload RSC de la ficha y del formulario, y respuesta de la Server Action de reporte, sobre el build de producción.)*
+- [x] Revisar límites de reporte, mensajes de error y que no se expongan ids internos ni datos de contacto.
+- [x] `pnpm audit`; revisar build scripts aprobados y dependencias directas. *(`effect` forzado a 3.22.5; `minimatch` aceptado y documentado en `CLAUDE.md`.)*
+- [x] Revisión de secretos: `.env` no versionado, `.env.example` completo.
+- [x] Pulido móvil: estados vacíos, errores, carga, botones grandes. *(Probado en Chromium a 320 y 390 px; falta repetirlo en un celular físico.)*
+- [ ] ~~Playwright: un E2E del flujo principal contra la BD de pruebas.~~ **Recortado por decisión del usuario:** no se instala Playwright.
 
 **Pruebas**
-- Automáticas: matriz de permisos; E2E (anónimo reporta → ADMIN asigna → TECHNICIAN resuelve → STAFF ve historial); `pnpm check` en verde.
+- Automáticas: matriz de permisos; `pnpm check` en verde. ~~E2E~~ recortado por decisión del usuario.
 - Manual: recorrido completo en el celular y en la laptop.
 
-**Listo cuando:** la matriz de permisos y el E2E pasan, `pnpm audit` no tiene hallazgos graves sin atender y el recorrido móvil se siente fluido.
+**Listo cuando:** la matriz de permisos pasa, `pnpm audit` no tiene hallazgos graves sin atender y el recorrido móvil se siente fluido.
 
 ---
 
@@ -354,8 +356,8 @@ Reglas:
 
 Sacrifica en este orden, de lo primero a lo último:
 
-1. **Fase 10** (correo): quedan las notificaciones in-app.
-2. E2E con Playwright y pruebas de componentes.
+1. **Fase 10** (correo): quedan las notificaciones in-app. *(Aplicado por decisión del usuario.)*
+2. E2E con Playwright y pruebas de componentes. *(E2E aplicado por decisión del usuario; las pruebas de componentes se conservan.)*
 3. Anti-abuso más allá del honeypot (Fase 6).
 4. CRUD de ubicaciones (texto libre en el activo).
 5. Rol STAFF separado (usar ADMIN/TECHNICIAN).
@@ -383,7 +385,7 @@ Sacrifica en este orden, de lo primero a lo último:
 | Cambia la URL y los QR impresos quedan inservibles | Fijar el dominio en la Fase 12 y recién entonces imprimir los QR de la demo. |
 | Spam o reportes falsos en el formulario público | Honeypot + límite por IP/activo; el ADMIN puede rechazar reportes. |
 | Filtrar datos de staff en la ficha pública | DTO con lista explícita + prueba de no filtración en cada fase. |
-| Falla el correo el día de la demo | Las notificaciones in-app son el canal principal; el correo es complemento. |
+| Fallan los avisos el día de la demo | El MVP solo avisa in-app (el correo se recortó): la bandeja `/reportes` y `/mis-reportes` muestran los reportes aunque la campana falle. |
 | Una sesión no alcanza para una fase | Dividir la fase en dos y mover lo pendiente; no dejar una fase a medias con pruebas rojas. |
 
 ## 9. Preguntas abiertas
