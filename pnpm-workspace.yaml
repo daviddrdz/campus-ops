@@ -9,3 +9,7 @@ allowBuilds:
 strictDepBuilds: true
 minimumReleaseAge: 1440
 blockExoticSubdeps: true
+# Parche de seguridad (Fase 11): @prisma/config 7.10.1 fija effect 3.20.0, con un
+# ReDoS (GHSA-7589-6fvf-x4pw) corregido en 3.22.1. Quitar al subir a un Prisma que lo traiga.
+overrides:
+  effect: 3.22.5
